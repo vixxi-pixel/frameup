@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>frame.up — Photography Hosting for Professionals</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0B0A08;
+  --surface:#131210;
+  --surface2:#1A1915;
+  --border:#2A2720;
+  --border2:#332F24;
+  --ink:#F2EDE4;
+  --ink2:#B8B0A2;
+  --ink3:#7A7268;
+  --gold:#C9A96E;
+  --gold2:#E8C98A;
+  --gold-dim:#6B5228;
+  --gold-bg:#16110A;
+  --green:#7BC47A;
+  --red:#E07070;
+}
+html{scroll-behavior:smooth}
+body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--ink);overflow-x:hidden;cursor:none}
+
+/* CUSTOM CURSOR */
+.cursor{position:fixed;width:10px;height:10px;background:var(--gold);border-radius:50%;pointer-events:none;z-index:9999;transform:translate(-50%,-50%);transition:transform 0.1s,width 0.3s,height 0.3s,opacity 0.3s;mix-blend-mode:difference}
+.cursor-ring{position:fixed;width:36px;height:36px;border:1px solid rgba(201,169,110,0.4);border-radius:50%;pointer-events:none;z-index:9998;transform:translate(-50%,-50%);transition:transform 0.15s ease-out,width 0.3s,height 0.3s,opacity 0.3s}
+body:hover .cursor{opacity:1}
+
+/* GRAIN OVERLAY */
+body::before{content:'';position:fixed;top:0;left:0;width:100%;height:100%;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");opacity:0.4;pointer-events:none;z-index:1000}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:500;display:flex;align-items:center;justify-content:space-between;padding:1.5rem 3rem;transition:background 0.3s,border-bottom 0.3s}
+nav.scrolled{background:rgba(11,10,8,0.92);backdrop-filter:blur(20px);border-bottom:1px solid var(--border)}
+.logo{font-family:'DM Serif Display',serif;font-size:1.6rem;font-weight:400;color:var(--ink);letter-spacing:0.02em}
+.logo-dot{color:var(--gold)}
+.nav-links{display:flex;gap:2.5rem;align-items:center}
+.nav-links a{font-size:0.8rem;font-weight:400;color:var(--ink3);text-decoration:none;letter-spacing:0.06em;text-transform:uppercase;transition:color 0.2s;cursor:none}
+.nav-links a:hover{color:var(--ink)}
+.nav-btn{background:transparent;border:1px solid var(--border2);color:var(--ink);padding:0.55rem 1.4rem;font-family:'Outfit',sans-serif;font-size:0.8rem;font-weight:400;letter-spacing:0.05em;text-transform:uppercase;cursor:none;transition:all 0.25s}
+.nav-btn:hover{background:var(--gold);border-color:var(--gold);color:#0B0A08}
+.nav-btn-primary{background:var(--gold);border:1px solid var(--gold);color:#0B0A08;padding:0.55rem 1.6rem;font-family:'Outfit',sans-serif;font-size:0.8rem;font-weight:500;letter-spacing:0.05em;text-transform:uppercase;cursor:none;transition:all 0.25s}
+.nav-btn-primary:hover{background:var(--gold2);border-color:var(--gold2)}
+
+/* HERO */
+.hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:8rem 2rem 6rem;position:relative;overflow:hidden}
+.hero-bg{position:absolute;inset:0;background:radial-gradient(ellipse 80% 60% at 50% 40%, rgba(201,169,110,0.06) 0%, transparent 70%);pointer-events:none}
+.hero-lines{position:absolute;inset:0;overflow:hidden;opacity:0.07}
+.hero-lines::before{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:800px;height:800px;border:1px solid var(--gold);border-radius:50%}
+.hero-lines::after{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:600px;height:600px;border:1px solid var(--gold);border-radius:50%}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:0.6rem;background:var(--gold-bg);border:1px solid var(--gold-dim);color:var(--gold);font-size:0.7rem;font-weight:500;letter-spacing:0.14em;text-transform:uppercase;padding:0.45rem 1.1rem;margin-bottom:2.5rem;opacity:0;animation:fadeUp 0.8s 0.2s forwards}
+.eyebrow-dot{width:5px;height:5px;background:var(--gold);border-radius:50%;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+.hero h1{font-family:'DM Serif Display',serif;font-size:clamp(3.5rem,8vw,7rem);font-weight:300;line-height:1.0;letter-spacing:-0.02em;margin-bottom:2rem;opacity:0;animation:fadeUp 0.9s 0.35s forwards}
+.hero h1 em{font-style:italic;color:var(--gold)}
+.hero-sub{font-size:1.05rem;font-weight:300;color:var(--ink2);max-width:560px;line-height:1.7;margin-bottom:3rem;opacity:0;animation:fadeUp 0.9s 0.5s forwards}
+.hero-ctas{display:flex;align-items:center;gap:1.2rem;margin-bottom:4.5rem;opacity:0;animation:fadeUp 0.9s 0.65s forwards}
+.cta-primary{background:var(--gold);color:#0B0A08;padding:0.9rem 2.4rem;font-family:'Outfit',sans-serif;font-size:0.875rem;font-weight:500;letter-spacing:0.04em;border:none;cursor:none;transition:all 0.25s;position:relative;overflow:hidden}
+.cta-primary::after{content:'';position:absolute;inset:0;background:rgba(255,255,255,0.1);transform:translateX(-100%);transition:transform 0.3s}
+.cta-primary:hover::after{transform:translateX(0)}
+.cta-primary:hover{background:var(--gold2)}
+.cta-secondary{color:var(--ink2);font-size:0.875rem;font-weight:400;letter-spacing:0.03em;display:flex;align-items:center;gap:0.6rem;cursor:none;transition:color 0.2s}
+.cta-secondary:hover{color:var(--ink)}
+.cta-arrow{width:20px;height:1px;background:currentColor;position:relative;transition:width 0.2s}
+.cta-arrow::after{content:'';position:absolute;right:0;top:-3px;border:4px solid transparent;border-left:5px solid currentColor}
+.cta-secondary:hover .cta-arrow{width:28px}
+.hero-proof{display:flex;align-items:center;gap:2.5rem;opacity:0;animation:fadeUp 0.9s 0.8s forwards}
+.proof-item{display:flex;flex-direction:column;align-items:center;gap:0.25rem}
+.proof-num{font-family:'DM Serif Display',serif;font-size:2rem;font-weight:400;color:var(--gold)}
+.proof-label{font-size:0.7rem;font-weight:400;color:var(--ink3);letter-spacing:0.1em;text-transform:uppercase}
+.proof-divider{width:1px;height:36px;background:var(--border2)}
+
+@keyframes fadeUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+
+/* GALLERY PREVIEW */
+.gallery-section{padding:6rem 3rem;position:relative}
+.section-label{font-size:0.7rem;font-weight:500;color:var(--gold);letter-spacing:0.14em;text-transform:uppercase;margin-bottom:1rem}
+.section-title{font-family:'DM Serif Display',serif;font-size:clamp(2rem,4vw,3.2rem);font-weight:300;line-height:1.15;margin-bottom:1.5rem}
+.section-title em{font-style:italic;color:var(--gold)}
+.section-sub{font-size:0.95rem;color:var(--ink2);max-width:480px;line-height:1.7;margin-bottom:3.5rem}
+
+.gallery-demo{position:relative;background:var(--surface);border:1px solid var(--border);overflow:hidden}
+.gallery-topbar{display:flex;align-items:center;justify-content:space-between;padding:0.9rem 1.5rem;border-bottom:1px solid var(--border);background:var(--surface2)}
+.gtb-left{display:flex;align-items:center;gap:1rem}
+.gtb-logo{font-family:'DM Serif Display',serif;font-size:1rem;color:var(--ink2)}
+.gtb-title{font-size:0.8rem;color:var(--ink3)}
+.gtb-right{display:flex;gap:0.75rem}
+.gtb-btn{background:transparent;border:1px solid var(--border2);color:var(--ink2);padding:0.35rem 0.9rem;font-size:0.7rem;font-family:'Outfit',sans-serif;letter-spacing:0.05em;cursor:none;transition:all 0.2s}
+.gtb-btn:hover{border-color:var(--gold);color:var(--gold)}
+.gtb-btn-gold{background:var(--gold);border:1px solid var(--gold);color:#0B0A08;padding:0.35rem 0.9rem;font-size:0.7rem;font-family:'Outfit',sans-serif;font-weight:500;cursor:none}
+.gallery-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:3px;padding:3px}
+.gallery-img{aspect-ratio:3/4;background:var(--surface2);position:relative;overflow:hidden;cursor:none}
+.gallery-img:first-child{grid-row:span 2}
+.gallery-img::after{content:'';position:absolute;inset:0;background:linear-gradient(to bottom,transparent 60%,rgba(0,0,0,0.3));opacity:0;transition:opacity 0.3s}
+.gallery-img:hover::after{opacity:1}
+.gi-1{background:linear-gradient(135deg,#2A2218 0%,#1A1510 100%)}
+.gi-2{background:linear-gradient(135deg,#1E1C15 0%,#2A2820 100%)}
+.gi-3{background:linear-gradient(135deg,#251E15 0%,#1A1810 100%)}
+.gi-4{background:linear-gradient(135deg,#1C1A14 0%,#232018 100%)}
+.gi-5{background:linear-gradient(135deg,#221D14 0%,#1E1A12 100%)}
+.gi-6{background:linear-gradient(135deg,#262214 0%,#1C1910 100%)}
+.gi-7{background:linear-gradient(135deg,#1E1C14 0%,#28241A 100%)}
+/* Fake photo shapes */
+.gallery-img::before{content:'';position:absolute;inset:15%;border-radius:2px;background:rgba(255,255,255,0.03)}
+.gallery-img.gi-1{grid-row:span 2;aspect-ratio:unset}
+
+/* FEATURES */
+.features-section{padding:7rem 3rem;background:var(--surface)}
+.features-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);margin-top:4rem}
+.feature-card{background:var(--surface);padding:2.5rem;position:relative;overflow:hidden;transition:background 0.3s}
+.feature-card:hover{background:var(--surface2)}
+.feature-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);opacity:0;transition:opacity 0.3s}
+.feature-card:hover::before{opacity:1}
+.feature-icon{width:40px;height:40px;border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;margin-bottom:1.5rem;color:var(--gold);font-size:1rem}
+.feature-title{font-family:'DM Serif Display',serif;font-size:1.3rem;font-weight:400;margin-bottom:0.75rem;color:var(--ink)}
+.feature-desc{font-size:0.875rem;color:var(--ink3);line-height:1.7;font-weight:300}
+.feature-tag{display:inline-block;background:var(--gold-bg);border:1px solid var(--gold-dim);color:var(--gold);font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;padding:0.25rem 0.65rem;margin-top:1.25rem}
+
+/* SPEED SECTION */
+.speed-section{padding:7rem 3rem;display:grid;grid-template-columns:1fr 1fr;gap:6rem;align-items:center;max-width:1200px;margin:0 auto}
+.speed-visual{position:relative}
+.speed-display{background:var(--surface);border:1px solid var(--border);padding:2.5rem;position:relative}
+.speed-display::before{content:'Gallery loaded';position:absolute;top:-1px;left:2rem;transform:translateY(-50%);background:var(--bg);padding:0 0.75rem;font-size:0.65rem;color:var(--gold);letter-spacing:0.1em;text-transform:uppercase}
+.speed-bar-wrap{margin-bottom:1.25rem}
+.speed-bar-label{display:flex;justify-content:space-between;margin-bottom:0.5rem}
+.speed-bar-name{font-size:0.75rem;color:var(--ink3);letter-spacing:0.04em}
+.speed-bar-val{font-size:0.75rem;color:var(--ink2);font-family:'DM Serif Display',serif}
+.speed-bar{height:4px;background:var(--border2);position:relative;overflow:hidden}
+.speed-bar-fill{height:100%;position:relative}
+.speed-bar-fill.frame{background:var(--gold);width:15%;animation:growBar 1.5s 0.5s both}
+.speed-bar-fill.comp1{background:var(--ink3);width:65%;animation:growBar 1.5s 0.7s both}
+.speed-bar-fill.comp2{background:var(--ink3);width:85%;animation:growBar 1.5s 0.9s both}
+@keyframes growBar{from{width:0}to{width:var(--target-width)}}
+.speed-bar-fill.frame{--target-width:15%}
+.speed-bar-fill.comp1{--target-width:65%}
+.speed-bar-fill.comp2{--target-width:85%}
+.speed-note{font-size:0.7rem;color:var(--ink3);margin-top:1.5rem;padding-top:1.5rem;border-top:1px solid var(--border)}
+.speed-num{font-family:'DM Serif Display',serif;font-size:3rem;color:var(--gold);display:block;line-height:1}
+
+/* PRICING */
+.pricing-section{padding:7rem 3rem;text-align:center}
+.pricing-section .section-title{margin-bottom:0.5rem}
+.pricing-section .section-sub{margin:0 auto 4rem}
+.pricing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;max-width:900px;margin:0 auto;background:var(--border)}
+.pricing-card{background:var(--surface);padding:2.5rem;text-align:left;position:relative}
+.pricing-card.featured{background:var(--surface2)}
+.pricing-card.featured::after{content:'Most Popular';position:absolute;top:-1px;left:50%;transform:translateX(-50%) translateY(-50%);background:var(--gold);color:#0B0A08;font-size:0.65rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;padding:0.3rem 0.9rem;white-space:nowrap}
+.plan-name{font-size:0.7rem;font-weight:500;color:var(--ink3);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:1.5rem}
+.plan-price{font-family:'DM Serif Display',serif;font-size:3.5rem;font-weight:300;color:var(--ink);line-height:1;margin-bottom:0.35rem}
+.plan-price span{font-size:1.2rem;vertical-align:super;color:var(--gold)}
+.plan-period{font-size:0.75rem;color:var(--ink3);margin-bottom:2rem}
+.plan-features{list-style:none;margin-bottom:2.5rem}
+.plan-features li{display:flex;align-items:flex-start;gap:0.7rem;font-size:0.85rem;color:var(--ink2);padding:0.5rem 0;border-bottom:1px solid var(--border);font-weight:300}
+.plan-features li:last-child{border-bottom:none}
+.plan-features li::before{content:'—';color:var(--gold);flex-shrink:0;font-family:'DM Serif Display',serif}
+.plan-btn{width:100%;padding:0.85rem;font-family:'Outfit',sans-serif;font-size:0.8rem;font-weight:500;letter-spacing:0.06em;text-transform:uppercase;cursor:none;transition:all 0.25s}
+.plan-btn-outline{background:transparent;border:1px solid var(--border2);color:var(--ink2)}
+.plan-btn-outline:hover{border-color:var(--gold);color:var(--gold)}
+.plan-btn-gold{background:var(--gold);border:1px solid var(--gold);color:#0B0A08}
+.plan-btn-gold:hover{background:var(--gold2)}
+
+/* TESTIMONIALS */
+.testimonials{padding:7rem 3rem;background:var(--surface)}
+.testi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);margin-top:4rem}
+.testi-card{background:var(--surface);padding:2.5rem}
+.testi-quote{font-family:'DM Serif Display',serif;font-size:1.2rem;font-weight:300;font-style:italic;line-height:1.6;color:var(--ink2);margin-bottom:1.5rem}
+.testi-quote em{color:var(--gold);font-style:normal}
+.testi-author{display:flex;align-items:center;gap:1rem}
+.testi-avatar{width:36px;height:36px;border-radius:50%;background:var(--surface2);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-family:'DM Serif Display',serif;font-size:0.9rem;color:var(--gold)}
+.testi-name{font-size:0.8rem;color:var(--ink);font-weight:500}
+.testi-role{font-size:0.7rem;color:var(--ink3);margin-top:0.15rem}
+
+/* CTA BANNER */
+.cta-banner{padding:7rem 3rem;text-align:center;position:relative;overflow:hidden}
+.cta-banner::before{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:600px;height:300px;background:radial-gradient(ellipse,rgba(201,169,110,0.08),transparent 70%)}
+.cta-banner h2{font-family:'DM Serif Display',serif;font-size:clamp(2.5rem,5vw,4.5rem);font-weight:300;line-height:1.1;margin-bottom:1.5rem}
+.cta-banner h2 em{font-style:italic;color:var(--gold)}
+.cta-banner p{font-size:1rem;color:var(--ink2);margin-bottom:3rem;font-weight:300}
+.cta-banner-btns{display:flex;align-items:center;justify-content:center;gap:1.2rem}
+
+/* FOOTER */
+footer{padding:4rem 3rem 2.5rem;border-top:1px solid var(--border)}
+.footer-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:3rem}
+.footer-logo{font-family:'DM Serif Display',serif;font-size:1.5rem;font-weight:400;margin-bottom:0.75rem}
+.footer-tagline{font-size:0.8rem;color:var(--ink3);font-weight:300}
+.footer-links{display:grid;grid-template-columns:repeat(3,1fr);gap:3rem}
+.footer-col-title{font-size:0.7rem;font-weight:500;color:var(--gold);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:1rem}
+.footer-col a{display:block;font-size:0.8rem;color:var(--ink3);text-decoration:none;margin-bottom:0.5rem;transition:color 0.2s;cursor:none}
+.footer-col a:hover{color:var(--ink)}
+.footer-bottom{display:flex;justify-content:space-between;align-items:center;padding-top:2rem;border-top:1px solid var(--border)}
+.footer-copy{font-size:0.75rem;color:var(--ink3)}
+.footer-made{font-size:0.75rem;color:var(--ink3)}
+.footer-made span{color:var(--gold)}
+
+/* SCROLL REVEAL */
+.reveal{opacity:0;transform:translateY(30px);transition:opacity 0.8s,transform 0.8s}
+.reveal.visible{opacity:1;transform:translateY(0)}
+
+/* SECTION WRAPPER */
+.section-wrap{max-width:1200px;margin:0 auto}
+
+/* DIVIDERS */
+.section-divider{height:1px;background:linear-gradient(90deg,transparent,var(--border2),transparent);margin:0 3rem}
+
+/* TICKER */
+.ticker-wrap{overflow:hidden;border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:0.75rem 0;background:var(--surface)}
+.ticker-inner{display:flex;gap:0;white-space:nowrap;animation:ticker 25s linear infinite}
+.ticker-item{display:inline-flex;align-items:center;gap:1rem;padding:0 2.5rem;font-size:0.7rem;font-weight:400;color:var(--ink3);letter-spacing:0.1em;text-transform:uppercase;flex-shrink:0}
+.ticker-dot{width:4px;height:4px;background:var(--gold);border-radius:50%;flex-shrink:0}
+@keyframes ticker{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+
+/* mobile */
+@media(max-width:768px){
+  nav{padding:1.2rem 1.5rem}
+  .nav-links{display:none}
+  .hero{padding:7rem 1.5rem 4rem}
+  .gallery-section,.features-section,.speed-section,.pricing-section,.testimonials,.cta-banner{padding:4rem 1.5rem}
+  .features-grid,.pricing-grid,.testi-grid{grid-template-columns:1fr}
+  .gallery-grid{grid-template-columns:repeat(2,1fr)}
+  .speed-section{grid-template-columns:1fr;gap:3rem}
+  .footer-top{flex-direction:column;gap:2rem}
+  .footer-links{grid-template-columns:repeat(2,1fr);gap:2rem}
+  footer{padding:3rem 1.5rem 2rem}
+}
+</style>
+</head>
+<body>
+
+<div class="cursor" id="cursor"></div>
+<div class="cursor-ring" id="cursorRing"></div>
+
+<!-- NAV -->
+<nav id="nav">
+  <div class="logo">frame<span class="logo-dot">.</span>up</div>
+  <div class="nav-links">
+    <a href="#features">Features</a>
+    <a href="#pricing">Pricing</a>
+    <a href="#testimonials">Stories</a>
+    <a href="#">Blog</a>
+  </div>
+  <div style="display:flex;gap:0.75rem;align-items:center">
+    <button class="nav-btn">Log in</button>
+    <button class="nav-btn-primary">Start free</button>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-bg"></div>
+  <div class="hero-lines"></div>
+  <div class="hero-eyebrow"><span class="eyebrow-dot"></span> Gallery delivery for photographers</div>
+  <h1>Your galleries.<br><em>Delivered instantly.</em></h1>
+  <p class="hero-sub">The fastest, most elegant way to deliver client galleries. Lightning-fast loading, zero commissions, and a client experience that feels like the photographs themselves.</p>
+  <div class="hero-ctas">
+    <button class="cta-primary">Start free — no card needed</button>
+    <button class="cta-secondary">See a live gallery <span class="cta-arrow"></span></button>
+  </div>
+  <div class="hero-proof">
+    <div class="proof-item">
+      <span class="proof-num">3s</span>
+      <span class="proof-label">Avg. load time</span>
+    </div>
+    <div class="proof-divider"></div>
+    <div class="proof-item">
+      <span class="proof-num">0%</span>
+      <span class="proof-label">Commission</span>
+    </div>
+    <div class="proof-divider"></div>
+    <div class="proof-item">
+      <span class="proof-num">4.2k</span>
+      <span class="proof-label">Photographers</span>
+    </div>
+    <div class="proof-divider"></div>
+    <div class="proof-item">
+      <span class="proof-num">∞</span>
+      <span class="proof-label">Storage on Pro</span>
+    </div>
+  </div>
+</section>
+
+<!-- TICKER -->
+<div class="ticker-wrap">
+  <div class="ticker-inner">
+    <span class="ticker-item"><span class="ticker-dot"></span>Lightning-fast delivery</span>
+    <span class="ticker-item"><span class="ticker-dot"></span>Password-protected galleries</span>
+    <span class="ticker-item"><span class="ticker-dot"></span>Zero commissions</span>
+    <span class="ticker-item"><span class="ticker-dot"></span>Sell prints & downloads</span>
+    <span class="ticker-item"><span class="ticker-dot"></span>Client proofing tools</span>
+    <span class="ticker-item"><span class="ticker-dot"></span>Custom domain</span>
+    <span class="ticker-item"><span class="ticker-dot"></span>Mobile optimized</span>
+    <span class="ticker-item"><span class="ticker-dot"></span>Lightning-fast delivery</span>
+    <span class="ticker-item"><span class="ticker-dot"></span>Password-protected galleries</span>
+    <span class="ticker-item"><span class="ticker-dot"></span>Zero commissions</span>
+    <span class="ticker-item"><span class="ticker-dot"></span>Sell prints & downloads</span>
+    <span class="ticker-item"><span class="ticker-dot"></span>Client proofing tools</span>
+    <span class="ticker-item"><span class="ticker-dot"></span>Custom domain</span>
+    <span class="ticker-item"><span class="ticker-dot"></span>Mobile optimized</span>
+  </div>
+</div>
+
+<!-- GALLERY DEMO -->
+<section class="gallery-section" id="features">
+  <div class="section-wrap">
+    <div class="reveal">
+      <div class="section-label">Gallery Experience</div>
+      <h2 class="section-title">What your clients<br>will <em>see</em></h2>
+      <p class="section-sub">A beautiful, full-screen gallery experience that makes your work shine — not the platform. Customize colours, fonts, and layouts to match your brand.</p>
+    </div>
+    <div class="gallery-demo reveal">
+      <div class="gallery-topbar">
+        <div class="gtb-left">
+          <span class="gtb-logo">Sarah & Tom</span>
+          <span class="gtb-title">Wedding Gallery · Oct 2024 · 287 photos</span>
+        </div>
+        <div class="gtb-right">
+          <button class="gtb-btn">Favourites (12)</button>
+          <button class="gtb-btn">↓ Download all</button>
+          <button class="gtb-btn-gold">Order prints</button>
+        </div>
+      </div>
+      <div class="gallery-grid">
+        <div class="gallery-img gi-1" style="grid-row:span 2;aspect-ratio:unset"></div>
+        <div class="gallery-img gi-2"></div>
+        <div class="gallery-img gi-3"></div>
+        <div class="gallery-img gi-4"></div>
+        <div class="gallery-img gi-5"></div>
+        <div class="gallery-img gi-6"></div>
+        <div class="gallery-img gi-7"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="features-section">
+  <div class="section-wrap">
+    <div class="reveal">
+      <div class="section-label">Built for photographers</div>
+      <h2 class="section-title">Everything you need,<br><em>nothing you don't</em></h2>
+    </div>
+    <div class="features-grid reveal">
+      <div class="feature-card">
+        <div class="feature-icon">⚡</div>
+        <div class="feature-title">Instant Gallery Delivery</div>
+        <p class="feature-desc">Upload, and your gallery is live in seconds. Smart CDN caching means your images load at full resolution in under 3 seconds worldwide.</p>
+        <span class="feature-tag">Sub-3s globally</span>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🔒</div>
+        <div class="feature-title">Password Protection</div>
+        <p class="feature-desc">Every gallery can be password-protected, link-expiring, or open to the world. You control access, always.</p>
+        <span class="feature-tag">Per-gallery control</span>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🛍</div>
+        <div class="feature-title">0% Commission Store</div>
+        <p class="feature-desc">Sell digital downloads and print packages. We charge a flat monthly fee — not a cut of your hard-earned sales. Ever.</p>
+        <span class="feature-tag">Keep 100%</span>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">💌</div>
+        <div class="feature-title">Client Proofing</div>
+        <p class="feature-desc">Clients can favourite images, add comments, and submit their selection — all without any logins or apps to download.</p>
+        <span class="feature-tag">No app required</span>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">🌐</div>
+        <div class="feature-title">Custom Domain</div>
+        <p class="feature-desc">Deliver from your own domain. Clients see galleries.yourstudio.com, not another platform's name. Your brand, end-to-end.</p>
+        <span class="feature-tag">Fully white-label</span>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon">📱</div>
+        <div class="feature-title">Mobile-First Design</div>
+        <p class="feature-desc">Galleries look stunning on every device. Clients browsing on their phone get the same experience as desktop — no compromises.</p>
+        <span class="feature-tag">Every screen size</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- SPEED -->
+<section style="padding:7rem 3rem">
+  <div class="speed-section" style="max-width:1100px;margin:0 auto">
+    <div class="reveal">
+      <div class="section-label">Performance</div>
+      <h2 class="section-title">Fast enough to<br><em>impress</em> your clients</h2>
+      <p class="section-sub" style="margin-bottom:2rem">Slow gallery delivery kills first impressions. Our CDN-powered infrastructure ensures full-resolution photos load before your clients even blink.</p>
+      <div style="display:flex;gap:3rem">
+        <div>
+          <span class="speed-num">3s</span>
+          <span style="font-size:0.75rem;color:var(--ink3);letter-spacing:0.1em;text-transform:uppercase;display:block;margin-top:0.25rem">Avg. gallery load</span>
+        </div>
+        <div>
+          <span class="speed-num">99.9%</span>
+          <span style="font-size:0.75rem;color:var(--ink3);letter-spacing:0.1em;text-transform:uppercase;display:block;margin-top:0.25rem">Uptime SLA</span>
+        </div>
+      </div>
+    </div>
+    <div class="speed-visual reveal">
+      <div class="speed-display">
+        <div class="speed-bar-wrap">
+          <div class="speed-bar-label">
+            <span class="speed-bar-name">frame.up</span>
+            <span class="speed-bar-val">2.8s</span>
+          </div>
+          <div class="speed-bar"><div class="speed-bar-fill frame"></div></div>
+        </div>
+        <div class="speed-bar-wrap">
+          <div class="speed-bar-label">
+            <span class="speed-bar-name">Competitor A</span>
+            <span class="speed-bar-val">11.2s</span>
+          </div>
+          <div class="speed-bar"><div class="speed-bar-fill comp1"></div></div>
+        </div>
+        <div class="speed-bar-wrap">
+          <div class="speed-bar-label">
+            <span class="speed-bar-name">Competitor B</span>
+            <span class="speed-bar-val">16.8s</span>
+          </div>
+          <div class="speed-bar"><div class="speed-bar-fill comp2"></div></div>
+        </div>
+        <p class="speed-note">Load time for a 250-photo gallery at full resolution. Tested from Toronto, CA.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TESTIMONIALS -->
+<section class="testimonials" id="testimonials">
+  <div class="section-wrap">
+    <div class="reveal">
+      <div class="section-label">Stories</div>
+      <h2 class="section-title">Photographers who<br><em>made the switch</em></h2>
+    </div>
+    <div class="testi-grid reveal">
+      <div class="testi-card">
+        <p class="testi-quote">"My clients used to email asking when galleries would be ready. Now they're <em>texting me to say how gorgeous</em> the delivery experience is."</p>
+        <div class="testi-author">
+          <div class="testi-avatar">M</div>
+          <div>
+            <div class="testi-name">Maya Thornton</div>
+            <div class="testi-role">Wedding Photographer, Vancouver</div>
+          </div>
+        </div>
+      </div>
+      <div class="testi-card">
+        <p class="testi-quote">"Switched from Pixieset and the difference in load speed alone was <em>worth every penny</em>. My couples are blown away."</p>
+        <div class="testi-author">
+          <div class="testi-avatar">J</div>
+          <div>
+            <div class="testi-name">James O'Sullivan</div>
+            <div class="testi-role">Portrait Photographer, Dublin</div>
+          </div>
+        </div>
+      </div>
+      <div class="testi-card">
+        <p class="testi-quote">"Zero commission on prints finally made selling worthwhile. <em>I made back my annual subscription in one weekend.</em>"</p>
+        <div class="testi-author">
+          <div class="testi-avatar">A</div>
+          <div>
+            <div class="testi-name">Aiko Watanabe</div>
+            <div class="testi-role">Commercial Photographer, Tokyo</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section class="pricing-section" id="pricing">
+  <div class="section-wrap">
+    <div class="reveal">
+      <div class="section-label">Pricing</div>
+      <h2 class="section-title">Simple, honest pricing</h2>
+      <p class="section-sub">No per-download fees, no commission cuts, no surprises. Cancel any time.</p>
+    </div>
+    <div class="pricing-grid reveal">
+      <div class="pricing-card">
+        <div class="plan-name">Starter</div>
+        <div class="plan-price"><span>$</span>0</div>
+        <div class="plan-period">Free forever</div>
+        <ul class="plan-features">
+          <li>3 active galleries</li>
+          <li>10 GB storage</li>
+          <li>Password protection</li>
+          <li>Client favouriting</li>
+          <li>frame.up subdomain</li>
+        </ul>
+        <button class="plan-btn plan-btn-outline">Get started free</button>
+      </div>
+      <div class="pricing-card featured">
+        <div class="plan-name">Pro</div>
+        <div class="plan-price"><span>$</span>19</div>
+        <div class="plan-period">per month, billed annually</div>
+        <ul class="plan-features">
+          <li>Unlimited galleries</li>
+          <li>Unlimited storage</li>
+          <li>Custom domain</li>
+          <li>0% commission store</li>
+          <li>Client proofing & selection</li>
+          <li>Download presets</li>
+          <li>Gallery analytics</li>
+        </ul>
+        <button class="plan-btn plan-btn-gold">Start 14-day trial</button>
+      </div>
+      <div class="pricing-card">
+        <div class="plan-name">Studio</div>
+        <div class="plan-price"><span>$</span>49</div>
+        <div class="plan-period">per month, billed annually</div>
+        <ul class="plan-features">
+          <li>Everything in Pro</li>
+          <li>5 team members</li>
+          <li>White-label branding</li>
+          <li>Priority CDN routing</li>
+          <li>Dedicated support</li>
+          <li>API access</li>
+        </ul>
+        <button class="plan-btn plan-btn-outline">Contact us</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="section-divider"></div>
+
+<!-- CTA BANNER -->
+<section class="cta-banner">
+  <div class="reveal">
+    <h2>Your work deserves<br>a <em>perfect delivery</em></h2>
+    <p>Join 4,200+ photographers who trust frame.up to deliver unforgettable gallery experiences.</p>
+    <div class="cta-banner-btns">
+      <button class="cta-primary">Start free — no card needed</button>
+      <button class="cta-secondary">Book a demo <span class="cta-arrow"></span></button>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-top">
+    <div>
+      <div class="footer-logo">frame<span style="color:var(--gold)">.</span>up</div>
+      <div class="footer-tagline">Gallery delivery for photographers who care.</div>
+    </div>
+    <div class="footer-links">
+      <div class="footer-col">
+        <div class="footer-col-title">Product</div>
+        <a href="#">Features</a>
+        <a href="#">Pricing</a>
+        <a href="#">Changelog</a>
+        <a href="#">Roadmap</a>
+      </div>
+      <div class="footer-col">
+        <div class="footer-col-title">Company</div>
+        <a href="#">About</a>
+        <a href="#">Blog</a>
+        <a href="#">Careers</a>
+        <a href="#">Press</a>
+      </div>
+      <div class="footer-col">
+        <div class="footer-col-title">Legal</div>
+        <a href="#">Privacy</a>
+        <a href="#">Terms</a>
+        <a href="#">Cookie policy</a>
+        <a href="#">Security</a>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <span class="footer-copy">© 2026 frame.up. All rights reserved.</span>
+    <span class="footer-made">Made with <span>♥</span> for photographers</span>
+  </div>
+</footer>
+
+<script>
+// Cursor
+const cursor = document.getElementById('cursor');
+const ring = document.getElementById('cursorRing');
+let mx=0,my=0,rx=0,ry=0;
+document.addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;cursor.style.left=mx+'px';cursor.style.top=my+'px'});
+function animRing(){rx+=(mx-rx)*0.12;ry+=(my-ry)*0.12;ring.style.left=rx+'px';ring.style.top=ry+'px';requestAnimationFrame(animRing)}
+animRing();
+document.querySelectorAll('button,a,.cta-secondary').forEach(el=>{
+  el.addEventListener('mouseenter',()=>{cursor.style.width='20px';cursor.style.height='20px';ring.style.width='52px';ring.style.height='52px'});
+  el.addEventListener('mouseleave',()=>{cursor.style.width='10px';cursor.style.height='10px';ring.style.width='36px';ring.style.height='36px'});
+});
+
+// Nav scroll
+const nav = document.getElementById('nav');
+window.addEventListener('scroll',()=>{nav.classList.toggle('scrolled',scrollY>60)});
+
+// Scroll reveal
+const observer = new IntersectionObserver(entries=>{
+  entries.forEach(e=>{if(e.isIntersecting)e.target.classList.add('visible')});
+},{threshold:0.1});
+document.querySelectorAll('.reveal').forEach(el=>observer.observe(el));
+</script>
+</body>
+</html>

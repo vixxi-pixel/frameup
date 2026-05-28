@@ -3,7 +3,7 @@ import { useAuth } from '../hooks/useAuth'
 import styles from './AppShell.module.css'
 
 const navItems = [
-  { to: '/',           label: 'Dashboard', icon: '⬜' },
+  { to: '/dashboard',  label: 'Dashboard', icon: '⬜' },
   { to: '/galleries',  label: 'Galleries',  icon: '🖼' },
   { to: '/store',      label: 'Store',      icon: '🛒' },
   { to: '/settings',   label: 'Settings',   icon: '⚙️' },

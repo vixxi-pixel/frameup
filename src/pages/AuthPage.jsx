@@ -28,7 +28,7 @@ export default function AuthPage({ mode }) {
       setError(error.message)
       setLoading(false)
     } else {
-      navigate('/')
+      navigate('/dashboard')
     }
   }
 
