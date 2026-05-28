@@ -310,7 +310,26 @@ export default function PublicGallery() {
             <button style={{ ...lightboxNav2, right: '1rem' }} onClick={e => { e.stopPropagation(); lightboxNav(1) }}>›</button>
           )}
 
-          <img src={photoUrls[lightbox.id]} alt={lightbox.filename} style={lightboxImg} onClick={e => e.stopPropagation()} />
+          {gallery.watermark_enabled && watermarkSrc ? (
+            <div style={{ position: 'relative', display: 'inline-block' }} onClick={e => e.stopPropagation()}>
+              <img src={photoUrls[lightbox.id]} alt={lightbox.filename} style={lightboxImg} />
+              <img
+                src={watermarkSrc}
+                alt="watermark"
+                style={{
+                  position: 'absolute',
+                  ...getPositionStyle(watermarkPosition),
+                  width: '20%',
+                  maxWidth: '120px',
+                  opacity: watermarkOpacity,
+                  pointerEvents: 'none',
+                  filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.4))',
+                }}
+              />
+            </div>
+          ) : (
+            <img src={photoUrls[lightbox.id]} alt={lightbox.filename} style={lightboxImg} onClick={e => e.stopPropagation()} />
+          )}
 
           <div style={lightboxFooter} onClick={e => e.stopPropagation()}>
             {lightbox.section && <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)' }}>{lightbox.section}</span>}
