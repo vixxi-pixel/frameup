@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 
@@ -30,6 +30,10 @@ export default function PublicGallery() {
   const [slideshow, setSlideshow] = useState(false)
   const [slideIndex, setSlideIndex] = useState(0)
   const [slidePlaying, setSlidePlaying] = useState(true)
+  const [watermarkSrc, setWatermarkSrc] = useState(null)
+  const [watermarkOpacity, setWatermarkOpacity] = useState(0.35)
+  const [watermarkPosition, setWatermarkPosition] = useState('bottom-right')
+  const watermarkImg = useRef(null)
   const sessionToken = getSessionToken()
 
   useEffect(() => { loadGallery() }, [slug])
@@ -41,6 +45,30 @@ export default function PublicGallery() {
     setGallery(gal)
     await supabase.from('gallery_views').insert({ gallery_id: gal.id })
     if (!gal.password_hash) await loadPhotos(gal)
+
+    // Load watermark if enabled
+    if (gal.watermark_enabled) {
+      const { data: prof } = await supabase
+        .from('profiles')
+        .select('logo_url, watermark_opacity, watermark_position')
+        .eq('id', gal.photographer_id)
+        .single()
+      if (prof?.logo_url) {
+        const { data: urlData } = await supabase.storage
+          .from('gallery-photos')
+          .createSignedUrl(prof.logo_url, 3600)
+        if (urlData?.signedUrl) {
+          setWatermarkSrc(urlData.signedUrl)
+          setWatermarkOpacity(prof.watermark_opacity ?? 0.35)
+          setWatermarkPosition(prof.watermark_position ?? 'bottom-right')
+          const img = new Image()
+          img.crossOrigin = 'anonymous'
+          img.src = urlData.signedUrl
+          watermarkImg.current = img
+        }
+      }
+    }
+
     setLoading(false)
   }
 
@@ -247,10 +275,20 @@ export default function PublicGallery() {
         <div style={grid}>
           {displayPhotos.map((p, i) => (
             <div key={p.id} style={cell} onClick={() => openLightbox(p, i)}>
-              {photoUrls[p.id]
-                ? <img src={photoUrls[p.id]} alt={p.filename} style={img} />
-                : <div style={{ ...img, background: 'var(--surface2)' }} />
-              }
+              {photoUrls[p.id] ? (
+                gallery.watermark_enabled && watermarkImg.current ? (
+                  <WatermarkedPhoto
+                    src={photoUrls[p.id]}
+                    logoImg={watermarkImg.current}
+                    opacity={watermarkOpacity}
+                    position={watermarkPosition}
+                  />
+                ) : (
+                  <img src={photoUrls[p.id]} alt={p.filename} style={img} />
+                )
+              ) : (
+                <div style={{ ...img, background: 'var(--surface2)' }} />
+              )}
               {gallery.allow_favourites && (
                 <button
                   style={{ ...favBtn, ...(favourites.has(p.id) ? favActive : {}) }}
@@ -356,6 +394,56 @@ export default function PublicGallery() {
       </footer>
     </div>
   )
+}
+
+// Canvas-based watermark component
+function WatermarkedPhoto({ src, logoImg, opacity, position }) {
+  const canvasRef = useRef()
+
+  useEffect(() => {
+    if (!canvasRef.current || !src) return
+    const canvas = canvasRef.current
+    const ctx = canvas.getContext('2d')
+    const photo = new Image()
+    photo.crossOrigin = 'anonymous'
+    photo.onload = () => {
+      canvas.width  = photo.naturalWidth
+      canvas.height = photo.naturalHeight
+      ctx.drawImage(photo, 0, 0)
+
+      if (logoImg.complete && logoImg.naturalWidth) {
+        applyWatermark(ctx, logoImg, canvas.width, canvas.height, opacity, position)
+      } else {
+        logoImg.onload = () => applyWatermark(ctx, logoImg, canvas.width, canvas.height, opacity, position)
+      }
+    }
+    photo.src = src
+  }, [src, logoImg, opacity, position])
+
+  return <canvas ref={canvasRef} style={img} />
+}
+
+function applyWatermark(ctx, logo, W, H, opacity, position) {
+  const maxW = W * 0.25
+  const scale = Math.min(maxW / logo.naturalWidth, (H * 0.18) / logo.naturalHeight)
+  const lw = logo.naturalWidth * scale
+  const lh = logo.naturalHeight * scale
+  const pad = Math.min(W, H) * 0.03
+
+  let x, y
+  switch (position) {
+    case 'bottom-right':  x = W - lw - pad; y = H - lh - pad; break
+    case 'bottom-left':   x = pad;           y = H - lh - pad; break
+    case 'bottom-center': x = (W - lw) / 2;  y = H - lh - pad; break
+    case 'top-right':     x = W - lw - pad; y = pad;           break
+    case 'top-left':      x = pad;           y = pad;           break
+    case 'center':        x = (W - lw) / 2;  y = (H - lh) / 2; break
+    default:              x = W - lw - pad; y = H - lh - pad
+  }
+
+  ctx.globalAlpha = opacity
+  ctx.drawImage(logo, x, y, lw, lh)
+  ctx.globalAlpha = 1
 }
 
 const loadingPage = { minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '1rem', background: 'var(--bg)' }

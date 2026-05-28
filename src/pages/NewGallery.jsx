@@ -24,6 +24,7 @@ export default function NewGallery() {
     expires_at: '',
     allow_downloads: true,
     allow_favourites: true,
+    watermark_enabled: false,
   })
   const [files, setFiles] = useState([])
   const [uploading, setUploading] = useState(false)
@@ -58,6 +59,7 @@ export default function NewGallery() {
         expires_at: form.expires_at || null,
         allow_downloads: form.allow_downloads,
         allow_favourites: form.allow_favourites,
+        watermark_enabled: form.watermark_enabled,
       })
       .select()
       .single()
@@ -137,6 +139,10 @@ export default function NewGallery() {
               <label style={toggleLabel}>
                 <input type="checkbox" checked={form.allow_favourites} onChange={() => toggle('allow_favourites')} style={{ accentColor: 'var(--warm)' }} />
                 Allow client favouriting
+              </label>
+              <label style={toggleLabel}>
+                <input type="checkbox" checked={form.watermark_enabled} onChange={() => toggle('watermark_enabled')} style={{ accentColor: 'var(--warm)' }} />
+                Watermark photos
               </label>
             </div>
           </div>

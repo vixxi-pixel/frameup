@@ -63,6 +63,11 @@ export default function GalleryDetail() {
     setGallery(data)
   }
 
+  async function toggleWatermark() {
+    const { data } = await supabase.from('galleries').update({ watermark_enabled: !gallery.watermark_enabled }).eq('id', id).select().single()
+    setGallery(data)
+  }
+
   async function deleteGallery() {
     if (!window.confirm('Delete this gallery and all its photos? This cannot be undone.')) return
     await supabase.from('galleries').delete().eq('id', id)
@@ -170,6 +175,13 @@ export default function GalleryDetail() {
           <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
             <button className="btn btn-ghost" onClick={toggleActive} style={{ fontSize: '0.8rem' }}>
               {gallery.is_active ? 'Deactivate' : 'Activate'}
+            </button>
+            <button
+              className="btn btn-ghost"
+              onClick={toggleWatermark}
+              style={{ fontSize: '0.8rem', ...(gallery.watermark_enabled ? { color: 'var(--warm)', borderColor: 'var(--warm-dim)' } : {}) }}
+            >
+              {gallery.watermark_enabled ? '💧 Watermark on' : '💧 Watermark off'}
             </button>
             <button className="btn btn-ghost" onClick={() => setShowUpload(v => !v)} style={{ fontSize: '0.8rem' }}>
               ⬆ Add photos
