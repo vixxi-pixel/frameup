@@ -10,6 +10,7 @@ import GalleryDetail from './pages/GalleryDetail'
 import StorePage     from './pages/StorePage'
 import SettingsPage  from './pages/SettingsPage'
 import PublicGallery from './pages/PublicGallery'
+import SampleGallery from './pages/SampleGallery'
 
 function Protected({ children }) {
   const { user, loading } = useAuth()
@@ -36,7 +37,8 @@ export default function App() {
       <Route path="/signup" element={<AuthPage mode="signup" />} />
 
       {/* Public gallery */}
-      <Route path="/g/:slug" element={<PublicGallery />} />
+      <Route path="/g/:slug"      element={<PublicGallery />} />
+      <Route path="/sample"       element={<SampleGallery />} />
 
       {/* Protected — photographer app */}
       <Route path="/dashboard"      element={<Protected><Dashboard /></Protected>} />
