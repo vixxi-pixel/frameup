@@ -101,12 +101,16 @@ export default function PublicGallery() {
     if (!slideshow || !slidePlaying) return
     const timer = setInterval(() => {
       setSlideIndex(i => {
-        if (i >= displayPhotos.length - 1) { setSlidePlaying(false); return i }
+        const total = photos.filter(p =>
+          (!showFavsOnly || favourites.has(p.id)) &&
+          (activeSection === 'all' || p.section === activeSection)
+        ).length
+        if (i >= total - 1) { setSlidePlaying(false); return i }
         return i + 1
       })
     }, 4000)
     return () => clearInterval(timer)
-  }, [slideshow, slidePlaying, displayPhotos.length])
+  }, [slideshow, slidePlaying, photos, showFavsOnly, activeSection, favourites])
 
   function openSlideshow() {
     setSlideIndex(0)
