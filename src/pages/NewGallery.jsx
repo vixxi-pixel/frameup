@@ -68,25 +68,26 @@ export default function NewGallery() {
       return
     }
 
-    // 2. Upload photos
+    // 2. Upload photos to R2
     if (files.length > 0) {
       setProgress({ done: 0, total: files.length })
       for (let i = 0; i < files.length; i++) {
         const file = files[i]
         const path = `${user.id}/${gallery.id}/${Date.now()}-${file.name}`
 
-        const { error: upErr } = await supabase.storage
-          .from('gallery-photos')
-          .upload(path, file)
-
-        if (!upErr) {
-          await supabase.from('photos').insert({
-            gallery_id: gallery.id,
-            storage_path: path,
-            filename: file.name,
-            size_bytes: file.size,
-            sort_order: i,
-          })
+        try {
+          const { error: upErr } = await supabase.storage.from('gallery-photos').upload(path, file)
+          if (!upErr) {
+            await supabase.from('photos').insert({
+              gallery_id: gallery.id,
+              storage_path: path,
+              filename: file.name,
+              size_bytes: file.size,
+              sort_order: i,
+            })
+          }
+        } catch (err) {
+          console.error('Upload error:', err)
         }
 
         setProgress({ done: i + 1, total: files.length })

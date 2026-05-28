@@ -48,10 +48,10 @@ export default function PublicGallery() {
 
     const urlMap = {}
     await Promise.all((phs ?? []).map(async p => {
-      try {
-        const url = await getR2SignedUrl(p.storage_path, 3600)
-        urlMap[p.id] = url
-      } catch (e) { console.error('URL error', e) }
+      const { data } = await supabase.storage
+        .from('gallery-photos')
+        .createSignedUrl(p.storage_path, 3600)
+      if (data) urlMap[p.id] = data.signedUrl
     }))
     setPhotoUrls(urlMap)
 
