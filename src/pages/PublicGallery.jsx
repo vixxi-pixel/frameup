@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { getR2SignedUrl } from '../lib/r2'
 
 function getSessionToken() {
   let token = localStorage.getItem('frameup_session')
@@ -46,8 +47,10 @@ export default function PublicGallery() {
 
     const urlMap = {}
     await Promise.all((phs ?? []).map(async p => {
-      const { data } = await supabase.storage.from('gallery-photos').createSignedUrl(p.storage_path, 3600)
-      if (data) urlMap[p.id] = data.signedUrl
+      try {
+        const url = await getR2SignedUrl(p.storage_path, 3600)
+        urlMap[p.id] = url
+      } catch (e) { console.error('URL error', e) }
     }))
     setPhotoUrls(urlMap)
 
