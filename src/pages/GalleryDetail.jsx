@@ -21,6 +21,10 @@ export default function GalleryDetail() {
   const [newSectionName, setNewSectionName] = useState('')
   const [customSections, setCustomSections] = useState([])
   const [selectedPhotos, setSelectedPhotos] = useState(new Set())
+  const [showUpload, setShowUpload] = useState(false)
+  const [uploadFiles, setUploadFiles] = useState([])
+  const [uploading, setUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState({ done: 0, total: 0 })
 
   useEffect(() => { loadGallery() }, [id])
 
@@ -69,6 +73,41 @@ export default function GalleryDetail() {
     await supabase.storage.from('gallery-photos').remove([photo.storage_path])
     await supabase.from('photos').delete().eq('id', photo.id)
     setPhotos(prev => prev.filter(p => p.id !== photo.id))
+  }
+
+  async function uploadMorePhotos() {
+    if (!uploadFiles.length) return
+    setUploading(true)
+    setUploadProgress({ done: 0, total: uploadFiles.length })
+    const newPhotos = []
+    for (let i = 0; i < uploadFiles.length; i++) {
+      const file = uploadFiles[i]
+      const path = `${user.id}/${gallery.id}/${Date.now()}-${file.name}`
+      const { error } = await supabase.storage.from('gallery-photos').upload(path, file)
+      if (!error) {
+        const { data: photo } = await supabase.from('photos').insert({
+          gallery_id: gallery.id,
+          storage_path: path,
+          filename: file.name,
+          size_bytes: file.size,
+          sort_order: photos.length + i,
+        }).select().single()
+        if (photo) {
+          const { data: urlData } = await supabase.storage.from('gallery-photos').createSignedUrl(path, 3600)
+          newPhotos.push({ photo, url: urlData?.signedUrl })
+        }
+      }
+      setUploadProgress({ done: i + 1, total: uploadFiles.length })
+    }
+    setPhotos(prev => [...prev, ...newPhotos.map(n => n.photo)])
+    setPhotoUrls(prev => {
+      const m = { ...prev }
+      newPhotos.forEach(n => { if (n.url) m[n.photo.id] = n.url })
+      return m
+    })
+    setUploadFiles([])
+    setUploading(false)
+    setShowUpload(false)
   }
 
   function toggleSelectPhoto(photoId) {
@@ -132,6 +171,9 @@ export default function GalleryDetail() {
             <button className="btn btn-ghost" onClick={toggleActive} style={{ fontSize: '0.8rem' }}>
               {gallery.is_active ? 'Deactivate' : 'Activate'}
             </button>
+            <button className="btn btn-ghost" onClick={() => setShowUpload(v => !v)} style={{ fontSize: '0.8rem' }}>
+              ⬆ Add photos
+            </button>
             <button className="btn btn-gold" onClick={copyLink}>
               {copied ? '✓ Copied!' : '🔗 Copy client link'}
             </button>
@@ -163,6 +205,39 @@ export default function GalleryDetail() {
             {copied ? '✓' : 'Copy'}
           </button>
         </div>
+
+        {/* Upload more photos */}
+        {showUpload && (
+          <div className="card" style={{ padding: '1.25rem', marginBottom: '1.5rem' }}>
+            <div style={{ fontSize: '0.9rem', fontWeight: 500, color: 'var(--ink)', marginBottom: '1rem' }}>Add more photos</div>
+            <label
+              style={{ display: 'block', border: '2px dashed var(--border2)', borderRadius: '10px', padding: '2rem', textAlign: 'center', cursor: 'pointer', background: 'var(--surface2)' }}
+              onDragOver={e => e.preventDefault()}
+              onDrop={e => { e.preventDefault(); setUploadFiles(Array.from(e.dataTransfer.files)) }}
+            >
+              <input type="file" accept="image/*" multiple style={{ display: 'none' }} onChange={e => setUploadFiles(Array.from(e.target.files))} />
+              <div style={{ fontSize: '1.5rem', opacity: 0.4, marginBottom: '0.5rem' }}>⬆️</div>
+              {uploadFiles.length > 0
+                ? <p style={{ color: 'var(--ink)', fontWeight: 500 }}>{uploadFiles.length} photo{uploadFiles.length !== 1 ? 's' : ''} ready to upload</p>
+                : <><p style={{ fontWeight: 500, marginBottom: '0.25rem', fontSize: '0.9rem' }}>Drop photos or click to browse</p><p style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>JPG, PNG, HEIC · Any size</p></>
+              }
+            </label>
+            {uploading && (
+              <div style={{ marginTop: '0.75rem' }}>
+                <div style={{ fontSize: '0.8rem', color: 'var(--muted)', marginBottom: '0.35rem' }}>Uploading {uploadProgress.done} / {uploadProgress.total}…</div>
+                <div style={{ height: '4px', background: 'var(--surface2)', borderRadius: '2px', overflow: 'hidden' }}>
+                  <div style={{ height: '100%', background: 'var(--warm)', width: `${(uploadProgress.done / uploadProgress.total) * 100}%`, transition: 'width 0.2s' }} />
+                </div>
+              </div>
+            )}
+            <div style={{ display: 'flex', gap: '0.6rem', justifyContent: 'flex-end', marginTop: '1rem' }}>
+              <button className="btn btn-ghost" onClick={() => { setShowUpload(false); setUploadFiles([]) }} style={{ fontSize: '0.8rem' }}>Cancel</button>
+              <button className="btn btn-gold" onClick={uploadMorePhotos} disabled={!uploadFiles.length || uploading} style={{ fontSize: '0.8rem' }}>
+                {uploading ? 'Uploading…' : `Upload ${uploadFiles.length > 0 ? uploadFiles.length + ' ' : ''}photo${uploadFiles.length !== 1 ? 's' : ''}`}
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Sections manager */}
         <div className="card" style={{ padding: '1.25rem', marginBottom: '1.5rem' }}>
