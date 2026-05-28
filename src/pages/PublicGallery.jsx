@@ -25,6 +25,8 @@ export default function PublicGallery() {
   const [lightboxIndex, setLightboxIndex] = useState(0)
   const [showFavsOnly, setShowFavsOnly] = useState(false)
   const [activeSection, setActiveSection] = useState('all')
+  const [zipping, setZipping] = useState(false)
+  const [zipProgress, setZipProgress] = useState(0)
   const sessionToken = getSessionToken()
 
   useEffect(() => { loadGallery() }, [slug])
@@ -46,8 +48,10 @@ export default function PublicGallery() {
 
     const urlMap = {}
     await Promise.all((phs ?? []).map(async p => {
-      const { data } = await supabase.storage.from('gallery-photos').createSignedUrl(p.storage_path, 3600)
-      if (data) urlMap[p.id] = data.signedUrl
+      try {
+        const url = await getR2SignedUrl(p.storage_path, 3600)
+        urlMap[p.id] = url
+      } catch (e) { console.error('URL error', e) }
     }))
     setPhotoUrls(urlMap)
 
@@ -89,15 +93,44 @@ export default function PublicGallery() {
     setLightboxIndex(next)
   }
 
-  function downloadAll() {
-    displayPhotos.forEach(p => {
-      if (photoUrls[p.id]) {
-        const a = document.createElement('a')
-        a.href = photoUrls[p.id]
-        a.download = p.filename ?? 'photo.jpg'
-        a.click()
+  async function downloadAll() {
+    if (zipping) return
+    setZipping(true)
+    setZipProgress(0)
+
+    try {
+      // Dynamically import JSZip
+      const JSZip = (await import('https://esm.sh/jszip@3.10.1')).default
+      const zip = new JSZip()
+      const folder = zip.folder(gallery.name || 'gallery')
+
+      const photos = displayPhotos.filter(p => photoUrls[p.id])
+      for (let i = 0; i < photos.length; i++) {
+        const p = photos[i]
+        try {
+          const res = await fetch(photoUrls[p.id])
+          const blob = await res.blob()
+          folder.file(p.filename || `photo-${i + 1}.jpg`, blob)
+        } catch (e) {
+          console.error('Failed to fetch photo', p.filename, e)
+        }
+        setZipProgress(Math.round(((i + 1) / photos.length) * 100))
       }
-    })
+
+      const content = await zip.generateAsync({ type: 'blob' })
+      const url = URL.createObjectURL(content)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${gallery.name || 'gallery'}.zip`
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch (err) {
+      console.error('Zip failed:', err)
+      alert('Download failed. Please try again.')
+    }
+
+    setZipping(false)
+    setZipProgress(0)
   }
 
   // Sections
@@ -147,8 +180,8 @@ export default function PublicGallery() {
             </button>
           )}
           {gallery.allow_downloads && (
-            <button className="btn btn-gold" style={{ fontSize: '0.8rem' }} onClick={downloadAll}>
-              ↓ Download all
+            <button className="btn btn-gold" style={{ fontSize: '0.8rem', minWidth: '120px' }} onClick={downloadAll} disabled={zipping}>
+              {zipping ? `Zipping… ${zipProgress}%` : '↓ Download all'}
             </button>
           )}
         </div>
