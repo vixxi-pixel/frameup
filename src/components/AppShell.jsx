@@ -6,6 +6,7 @@ const navItems = [
   { to: '/',           label: 'Dashboard', icon: '⬜' },
   { to: '/galleries',  label: 'Galleries',  icon: '🖼' },
   { to: '/store',      label: 'Store',      icon: '🛒' },
+  { to: '/settings',   label: 'Settings',   icon: '⚙️' },
 ]
 
 export default function AppShell({ children }) {

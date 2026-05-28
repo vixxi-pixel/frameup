@@ -7,6 +7,7 @@ import GalleriesPage from './pages/GalleriesPage'
 import NewGallery   from './pages/NewGallery'
 import GalleryDetail from './pages/GalleryDetail'
 import StorePage    from './pages/StorePage'
+import SettingsPage from './pages/SettingsPage'
 import PublicGallery from './pages/PublicGallery'
 
 function Protected({ children }) {
@@ -30,6 +31,7 @@ export default function App() {
       <Route path="/galleries/new" element={<Protected><NewGallery /></Protected>} />
       <Route path="/galleries/:id" element={<Protected><GalleryDetail /></Protected>} />
       <Route path="/store" element={<Protected><StorePage /></Protected>} />
+      <Route path="/settings" element={<Protected><SettingsPage /></Protected>} />
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />

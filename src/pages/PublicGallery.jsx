@@ -27,6 +27,9 @@ export default function PublicGallery() {
   const [activeSection, setActiveSection] = useState('all')
   const [zipping, setZipping] = useState(false)
   const [zipProgress, setZipProgress] = useState(0)
+  const [slideshow, setSlideshow] = useState(false)
+  const [slideIndex, setSlideIndex] = useState(0)
+  const [slidePlaying, setSlidePlaying] = useState(true)
   const sessionToken = getSessionToken()
 
   useEffect(() => { loadGallery() }, [slug])
@@ -91,6 +94,24 @@ export default function PublicGallery() {
     if (next < 0 || next >= displayPhotos.length) return
     setLightbox(displayPhotos[next])
     setLightboxIndex(next)
+  }
+
+  // Slideshow auto-advance
+  useEffect(() => {
+    if (!slideshow || !slidePlaying) return
+    const timer = setInterval(() => {
+      setSlideIndex(i => {
+        if (i >= displayPhotos.length - 1) { setSlidePlaying(false); return i }
+        return i + 1
+      })
+    }, 4000)
+    return () => clearInterval(timer)
+  }, [slideshow, slidePlaying, displayPhotos.length])
+
+  function openSlideshow() {
+    setSlideIndex(0)
+    setSlidePlaying(true)
+    setSlideshow(true)
   }
 
   async function downloadAll() {
@@ -173,6 +194,11 @@ export default function PublicGallery() {
         </div>
         <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center', flexWrap: 'wrap' }}>
           <span style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>{displayPhotos.length} photos</span>
+          {displayPhotos.length > 0 && (
+            <button className="btn btn-ghost" style={{ fontSize: '0.8rem', padding: '0.4rem 0.9rem' }} onClick={openSlideshow}>
+              ▶ Slideshow
+            </button>
+          )}
           {gallery.allow_favourites && (
             <button className="btn btn-ghost" style={{ fontSize: '0.8rem', padding: '0.4rem 0.9rem' }}
               onClick={() => { setShowFavsOnly(v => !v); setActiveSection('all') }}>
@@ -263,6 +289,64 @@ export default function PublicGallery() {
         </div>
       )}
 
+      {/* Slideshow */}
+      {slideshow && (
+        <div style={slideshowOverlay}>
+          {/* Top bar */}
+          <div style={slideshowTop}>
+            <div>
+              <div style={{ fontFamily: "'DM Serif Display', serif", fontSize: '1rem', color: '#fff' }}>{gallery.name}</div>
+              <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.45)', marginTop: '2px' }}>
+                {slideIndex + 1} / {displayPhotos.length}
+                {displayPhotos[slideIndex]?.section && ` · ${displayPhotos[slideIndex].section}`}
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
+              <button style={slideBtn} onClick={() => setSlideIndex(i => Math.max(0, i - 1))}>‹</button>
+              <button style={slideBtn} onClick={() => setSlidePlaying(v => !v)}>
+                {slidePlaying ? '⏸' : '▶'}
+              </button>
+              <button style={slideBtn} onClick={() => setSlideIndex(i => Math.min(displayPhotos.length - 1, i + 1))}>›</button>
+              <button style={{ ...slideBtn, marginLeft: '0.5rem', fontSize: '1rem' }} onClick={() => setSlideshow(false)}>✕</button>
+            </div>
+          </div>
+
+          {/* Progress bar */}
+          <div style={slideProgressBar}>
+            <div style={{ ...slideProgressFill, width: `${((slideIndex + 1) / displayPhotos.length) * 100}%`, transition: slidePlaying ? 'width 4s linear' : 'none' }} />
+          </div>
+
+          {/* Photo */}
+          {displayPhotos[slideIndex] && photoUrls[displayPhotos[slideIndex].id] ? (
+            <img
+              key={slideIndex}
+              src={photoUrls[displayPhotos[slideIndex].id]}
+              alt=""
+              style={slideshowImg}
+            />
+          ) : (
+            <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.9rem' }}>Loading…</div>
+          )}
+
+          {/* Thumbnail strip */}
+          <div style={thumbStrip}>
+            {displayPhotos.map((p, i) => (
+              <div
+                key={p.id}
+                onClick={() => { setSlideIndex(i); setSlidePlaying(false) }}
+                style={{
+                  ...thumbCell,
+                  outline: i === slideIndex ? '2px solid var(--warm)' : 'none',
+                  opacity: i === slideIndex ? 1 : 0.5,
+                }}
+              >
+                {photoUrls[p.id] && <img src={photoUrls[p.id]} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }} />}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <footer style={footerStyle}>
         <span style={{ fontFamily: "'DM Serif Display', serif" }}>frame<span style={{ color: 'var(--warm)' }}>.</span>up</span>
       </footer>
@@ -291,3 +375,11 @@ const pwCard = { background: 'var(--surface)', border: '1px solid var(--border)'
 const logoStyle = { fontFamily: "'DM Serif Display', serif", fontSize: '1.2rem', marginBottom: '1.25rem', color: 'var(--ink)' }
 const pwTitle = { fontSize: '1.3rem', fontFamily: "'DM Serif Display', serif", color: 'var(--ink)', marginBottom: '0.35rem' }
 const footerStyle = { padding: '2rem', textAlign: 'center', fontSize: '0.85rem', color: 'var(--muted)', borderTop: '1px solid var(--border)', marginTop: '2rem' }
+const slideshowOverlay = { position: 'fixed', inset: 0, background: '#000', zIndex: 2000, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }
+const slideshowTop = { position: 'absolute', top: 0, left: 0, right: 0, padding: '1rem 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'linear-gradient(to bottom, rgba(0,0,0,0.7), transparent)', zIndex: 10 }
+const slideBtn = { background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff', width: '36px', height: '36px', borderRadius: '50%', fontSize: '1.1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit' }
+const slideProgressBar = { position: 'absolute', top: 0, left: 0, right: 0, height: '2px', background: 'rgba(255,255,255,0.15)', zIndex: 11 }
+const slideProgressFill = { height: '100%', background: 'var(--warm)' }
+const slideshowImg = { maxWidth: '100vw', maxHeight: 'calc(100vh - 120px)', objectFit: 'contain', animation: 'fadeIn 0.6s ease' }
+const thumbStrip = { position: 'absolute', bottom: 0, left: 0, right: 0, padding: '0.75rem 1rem', display: 'flex', gap: '4px', overflowX: 'auto', background: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)', justifyContent: 'center' }
+const thumbCell = { width: '48px', height: '48px', flexShrink: 0, background: 'rgba(255,255,255,0.1)', cursor: 'pointer', borderRadius: '3px', overflow: 'hidden', transition: 'opacity 0.2s, outline 0.2s' }
