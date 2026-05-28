@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 
@@ -33,7 +33,6 @@ export default function PublicGallery() {
   const [watermarkSrc, setWatermarkSrc] = useState(null)
   const [watermarkOpacity, setWatermarkOpacity] = useState(0.35)
   const [watermarkPosition, setWatermarkPosition] = useState('bottom-right')
-  const watermarkImg = useRef(null)
   const sessionToken = getSessionToken()
 
   useEffect(() => { loadGallery() }, [slug])
@@ -61,10 +60,6 @@ export default function PublicGallery() {
           setWatermarkSrc(urlData.signedUrl)
           setWatermarkOpacity(prof.watermark_opacity ?? 0.35)
           setWatermarkPosition(prof.watermark_position ?? 'bottom-right')
-          const img = new Image()
-          img.crossOrigin = 'anonymous'
-          img.src = urlData.signedUrl
-          watermarkImg.current = img
         }
       }
     }
@@ -276,10 +271,10 @@ export default function PublicGallery() {
           {displayPhotos.map((p, i) => (
             <div key={p.id} style={cell} onClick={() => openLightbox(p, i)}>
               {photoUrls[p.id] ? (
-                gallery.watermark_enabled && watermarkImg.current ? (
+                gallery.watermark_enabled && watermarkSrc ? (
                   <WatermarkedPhoto
                     src={photoUrls[p.id]}
-                    logoImg={watermarkImg.current}
+                    logoSrc={watermarkSrc}
                     opacity={watermarkOpacity}
                     position={watermarkPosition}
                   />
@@ -396,54 +391,41 @@ export default function PublicGallery() {
   )
 }
 
-// Canvas-based watermark component
-function WatermarkedPhoto({ src, logoImg, opacity, position }) {
-  const canvasRef = useRef()
-
-  useEffect(() => {
-    if (!canvasRef.current || !src) return
-    const canvas = canvasRef.current
-    const ctx = canvas.getContext('2d')
-    const photo = new Image()
-    photo.crossOrigin = 'anonymous'
-    photo.onload = () => {
-      canvas.width  = photo.naturalWidth
-      canvas.height = photo.naturalHeight
-      ctx.drawImage(photo, 0, 0)
-
-      if (logoImg.complete && logoImg.naturalWidth) {
-        applyWatermark(ctx, logoImg, canvas.width, canvas.height, opacity, position)
-      } else {
-        logoImg.onload = () => applyWatermark(ctx, logoImg, canvas.width, canvas.height, opacity, position)
-      }
-    }
-    photo.src = src
-  }, [src, logoImg, opacity, position])
-
-  return <canvas ref={canvasRef} style={img} />
+// CSS overlay watermark — no canvas, no CORS issues
+function WatermarkedPhoto({ src, logoSrc, opacity, position }) {
+  const posStyle = getPositionStyle(position)
+  return (
+    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
+      <img src={src} alt="" style={img} />
+      <img
+        src={logoSrc}
+        alt="watermark"
+        style={{
+          position: 'absolute',
+          ...posStyle,
+          width: '25%',
+          maxWidth: '120px',
+          opacity,
+          pointerEvents: 'none',
+          userSelect: 'none',
+          filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.3))',
+        }}
+      />
+    </div>
+  )
 }
 
-function applyWatermark(ctx, logo, W, H, opacity, position) {
-  const maxW = W * 0.25
-  const scale = Math.min(maxW / logo.naturalWidth, (H * 0.18) / logo.naturalHeight)
-  const lw = logo.naturalWidth * scale
-  const lh = logo.naturalHeight * scale
-  const pad = Math.min(W, H) * 0.03
-
-  let x, y
+function getPositionStyle(position) {
+  const pad = '8px'
   switch (position) {
-    case 'bottom-right':  x = W - lw - pad; y = H - lh - pad; break
-    case 'bottom-left':   x = pad;           y = H - lh - pad; break
-    case 'bottom-center': x = (W - lw) / 2;  y = H - lh - pad; break
-    case 'top-right':     x = W - lw - pad; y = pad;           break
-    case 'top-left':      x = pad;           y = pad;           break
-    case 'center':        x = (W - lw) / 2;  y = (H - lh) / 2; break
-    default:              x = W - lw - pad; y = H - lh - pad
+    case 'bottom-right':  return { bottom: pad, right: pad }
+    case 'bottom-left':   return { bottom: pad, left: pad }
+    case 'bottom-center': return { bottom: pad, left: '50%', transform: 'translateX(-50%)' }
+    case 'top-right':     return { top: pad, right: pad }
+    case 'top-left':      return { top: pad, left: pad }
+    case 'center':        return { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }
+    default:              return { bottom: pad, right: pad }
   }
-
-  ctx.globalAlpha = opacity
-  ctx.drawImage(logo, x, y, lw, lh)
-  ctx.globalAlpha = 1
 }
 
 const loadingPage = { minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '1rem', background: 'var(--bg)' }
