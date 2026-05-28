@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { uploadToR2, getR2SignedUrl, deleteFromR2 } from '../lib/r2'
 import { useAuth } from '../hooks/useAuth'
 import AppShell from '../components/AppShell'
 
@@ -46,10 +45,8 @@ export default function GalleryDetail() {
       setCustomSections(secs)
       const urlMap = {}
       await Promise.all(phs.slice(0, 30).map(async p => {
-        try {
-          const url = await getR2SignedUrl(p.storage_path, 3600)
-          urlMap[p.id] = url
-        } catch (e) { console.error('URL error', e) }
+        const { data } = await supabase.storage.from('gallery-photos').createSignedUrl(p.storage_path, 3600)
+        if (data) urlMap[p.id] = data.signedUrl
       }))
       setPhotoUrls(urlMap)
     }
@@ -73,7 +70,7 @@ export default function GalleryDetail() {
   }
 
   async function deletePhoto(photo) {
-    await deleteFromR2(photo.storage_path)
+    await supabase.storage.from('gallery-photos').remove([photo.storage_path])
     await supabase.from('photos').delete().eq('id', photo.id)
     setPhotos(prev => prev.filter(p => p.id !== photo.id))
   }
@@ -86,8 +83,8 @@ export default function GalleryDetail() {
     for (let i = 0; i < uploadFiles.length; i++) {
       const file = uploadFiles[i]
       const path = `${user.id}/${gallery.id}/${Date.now()}-${file.name}`
-      try {
-        await uploadToR2(file, path)
+      const { error } = await supabase.storage.from('gallery-photos').upload(path, file)
+      if (!error) {
         const { data: photo } = await supabase.from('photos').insert({
           gallery_id: gallery.id,
           storage_path: path,
@@ -96,11 +93,9 @@ export default function GalleryDetail() {
           sort_order: photos.length + i,
         }).select().single()
         if (photo) {
-          const url = await getR2SignedUrl(path, 3600)
-          newPhotos.push({ photo, url })
+          const { data: urlData } = await supabase.storage.from('gallery-photos').createSignedUrl(path, 3600)
+          newPhotos.push({ photo, url: urlData?.signedUrl })
         }
-      } catch (err) {
-        console.error('Upload error:', err)
       }
       setUploadProgress({ done: i + 1, total: uploadFiles.length })
     }
