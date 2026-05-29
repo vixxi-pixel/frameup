@@ -31,7 +31,7 @@ export default function AppShell({ children }) {
             <NavLink
               key={item.to}
               to={item.to}
-              end={item.to === '/'}
+              end={item.to === '/dashboard'}
               className={({ isActive }) =>
                 `${styles.navItem} ${isActive ? styles.active : ''}`
               }
@@ -40,6 +40,15 @@ export default function AppShell({ children }) {
               {item.label}
             </NavLink>
           ))}
+          {profile?.is_admin && (
+            <NavLink
+              to="/admin"
+              className={({ isActive }) => `${styles.navItem} ${isActive ? styles.active : ''}`}
+            >
+              <span className={styles.navIcon}>🛡</span>
+              Admin
+            </NavLink>
+          )}
         </nav>
 
         <div className={styles.newBtn}>

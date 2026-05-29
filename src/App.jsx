@@ -11,6 +11,7 @@ import StorePage     from './pages/StorePage'
 import SettingsPage  from './pages/SettingsPage'
 import PublicGallery from './pages/PublicGallery'
 import SampleGallery from './pages/SampleGallery'
+import AdminDashboard from './pages/AdminDashboard'
 
 function Protected({ children }) {
   const { user, loading } = useAuth()
@@ -47,6 +48,7 @@ export default function App() {
       <Route path="/galleries/:id"  element={<Protected><GalleryDetail /></Protected>} />
       <Route path="/store"          element={<Protected><StorePage /></Protected>} />
       <Route path="/settings"       element={<Protected><SettingsPage /></Protected>} />
+      <Route path="/admin"          element={<Protected><AdminDashboard /></Protected>} />
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/" replace />} />
