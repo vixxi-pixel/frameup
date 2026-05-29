@@ -116,16 +116,31 @@ export default function SampleGallery() {
 
   useEffect(() => {
     function onKey(e) {
-      if (lightbox) {
-        if (e.key === 'ArrowRight') lightboxNav(1)
-        if (e.key === 'ArrowLeft')  lightboxNav(-1)
-        if (e.key === 'Escape')     setLightbox(null)
+      if (['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName)) return
+
+      if (slideshow) {
+        if (e.key === 'Escape')     { setSlideshow(false); return }
+        if (e.key === 'ArrowRight') { setSlideIndex(i => Math.min(i + 1, display.length - 1)); setSlidePlaying(false); return }
+        if (e.key === 'ArrowLeft')  { setSlideIndex(i => Math.max(i - 1, 0)); setSlidePlaying(false); return }
+        if (e.key === ' ')          { e.preventDefault(); setSlidePlaying(v => !v); return }
+        return
       }
-      if (slideshow && e.key === 'Escape') setSlideshow(false)
+
+      if (lightbox) {
+        if (e.key === 'Escape')     { setLightbox(null); return }
+        if (e.key === 'ArrowRight') { lightboxNav(1); return }
+        if (e.key === 'ArrowLeft')  { lightboxNav(-1); return }
+        if (e.key === 'f' || e.key === 'F') { toggleFav(lightbox.id); return }
+        return
+      }
+
+      if (e.key === 's' || e.key === 'S') { setSlideIndex(0); setSlidePlaying(true); setSlideshow(true); return }
+      if (e.key === 'f' || e.key === 'F') { setShowFavsOnly(v => !v); return }
+      if (e.key === 'Escape')             { setShowFavsOnly(false); setActiveSection('All'); return }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [lightbox, lightboxIndex, slideshow])
+  }, [slideshow, lightbox, lightboxIndex, display, favs, slidePlaying])
 
   return (
     <div style={{ minHeight: '100vh', background: '#0E0D0B', fontFamily: "'DM Sans', system-ui, sans-serif" }}>
@@ -162,6 +177,16 @@ export default function SampleGallery() {
           <button style={goldBtn}>↓ Download all</button>
         </div>
       </header>
+
+      {/* Keyboard hints */}
+      <div style={{ padding: '0.5rem 1.5rem', background: '#1E1C18', borderBottom: '1px solid #2A2722', display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
+        {[['← →','Navigate'],['F','Favourite'],['S','Slideshow'],['Esc','Close']].map(([k,l]) => (
+          <div key={k} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+            <kbd style={{ background: '#252320', border: '1px solid #333028', borderRadius: '4px', padding: '1px 6px', fontSize: '0.65rem', color: '#7A756B', fontFamily: 'inherit' }}>{k}</kbd>
+            <span style={{ fontSize: '0.7rem', color: '#5A554C' }}>{l}</span>
+          </div>
+        ))}
+      </div>
 
       {/* Section tabs */}
       <div style={{

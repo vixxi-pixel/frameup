@@ -119,6 +119,52 @@ export default function PublicGallery() {
     setLightboxIndex(next)
   }
 
+  // Keyboard shortcuts
+  useEffect(() => {
+    function onKey(e) {
+      // Don't fire if user is typing in an input
+      if (['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName)) return
+
+      // Slideshow controls
+      if (slideshow) {
+        if (e.key === 'Escape')      { setSlideshow(false); return }
+        if (e.key === 'ArrowRight')  { setSlideIndex(i => Math.min(i + 1, displayPhotos.length - 1)); setSlidePlaying(false); return }
+        if (e.key === 'ArrowLeft')   { setSlideIndex(i => Math.max(i - 1, 0)); setSlidePlaying(false); return }
+        if (e.key === ' ')           { e.preventDefault(); setSlidePlaying(v => !v); return }
+        return
+      }
+
+      // Lightbox controls
+      if (lightbox) {
+        if (e.key === 'Escape')     { setLightbox(null); return }
+        if (e.key === 'ArrowRight') { lightboxNav(1); return }
+        if (e.key === 'ArrowLeft')  { lightboxNav(-1); return }
+        if (e.key === 'f' || e.key === 'F') {
+          if (gallery?.allow_favourites) toggleFavourite({ stopPropagation: () => {} }, lightbox.id)
+          return
+        }
+        if (e.key === 'd' || e.key === 'D') {
+          if (gallery?.allow_downloads && photoUrls[lightbox.id]) {
+            const a = document.createElement('a')
+            a.href = photoUrls[lightbox.id]
+            a.download = lightbox.filename || 'photo.jpg'
+            a.click()
+          }
+          return
+        }
+        return
+      }
+
+      // Gallery-level shortcuts (no lightbox/slideshow open)
+      if (e.key === 's' || e.key === 'S') { openSlideshow(); return }
+      if (e.key === 'f' || e.key === 'F') { setShowFavsOnly(v => !v); return }
+      if (e.key === 'Escape')             { setShowFavsOnly(false); setActiveSection('all'); return }
+    }
+
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [slideshow, lightbox, lightboxIndex, displayPhotos, gallery, photoUrls, favourites, slidePlaying])
+
   // Slideshow auto-advance
   useEffect(() => {
     if (!slideshow || !slidePlaying) return
@@ -239,6 +285,32 @@ export default function PublicGallery() {
           )}
         </div>
       </header>
+
+      {/* Keyboard shortcuts hint */}
+      <div style={{
+        padding: '0.5rem 2rem',
+        background: 'var(--surface2)',
+        borderBottom: '1px solid var(--border)',
+        display: 'flex', gap: '1.5rem', flexWrap: 'wrap',
+      }}>
+        {[
+          { key: '← →', label: 'Navigate' },
+          { key: 'F', label: 'Favourite' },
+          { key: 'S', label: 'Slideshow' },
+          { key: 'D', label: 'Download' },
+          { key: 'Esc', label: 'Close' },
+        ].map(s => (
+          <div key={s.key} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+            <kbd style={{
+              background: 'var(--surface3)', border: '1px solid var(--border2)',
+              borderRadius: '4px', padding: '1px 6px',
+              fontSize: '0.65rem', color: 'var(--muted)', fontFamily: 'inherit',
+              letterSpacing: '0.02em',
+            }}>{s.key}</kbd>
+            <span style={{ fontSize: '0.7rem', color: 'var(--muted2)' }}>{s.label}</span>
+          </div>
+        ))}
+      </div>
 
       {/* Section tabs */}
       {hasSections && !showFavsOnly && (
