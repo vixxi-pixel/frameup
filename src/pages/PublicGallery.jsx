@@ -121,24 +121,34 @@ export default function PublicGallery() {
 
   // Keyboard shortcuts
   useEffect(() => {
+    // Compute displayPhotos inline to avoid circular reference
+    let dp = photos
+    if (showFavsOnly) dp = dp.filter(p => favourites.has(p.id))
+    if (activeSection !== 'all') dp = dp.filter(p => p.section === activeSection)
+
     function onKey(e) {
-      // Don't fire if user is typing in an input
       if (['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName)) return
 
-      // Slideshow controls
       if (slideshow) {
         if (e.key === 'Escape')      { setSlideshow(false); return }
-        if (e.key === 'ArrowRight')  { setSlideIndex(i => Math.min(i + 1, displayPhotos.length - 1)); setSlidePlaying(false); return }
+        if (e.key === 'ArrowRight')  { setSlideIndex(i => Math.min(i + 1, dp.length - 1)); setSlidePlaying(false); return }
         if (e.key === 'ArrowLeft')   { setSlideIndex(i => Math.max(i - 1, 0)); setSlidePlaying(false); return }
         if (e.key === ' ')           { e.preventDefault(); setSlidePlaying(v => !v); return }
         return
       }
 
-      // Lightbox controls
       if (lightbox) {
         if (e.key === 'Escape')     { setLightbox(null); return }
-        if (e.key === 'ArrowRight') { lightboxNav(1); return }
-        if (e.key === 'ArrowLeft')  { lightboxNav(-1); return }
+        if (e.key === 'ArrowRight') {
+          const next = lightboxIndex + 1
+          if (next < dp.length) { setLightbox(dp[next]); setLightboxIndex(next) }
+          return
+        }
+        if (e.key === 'ArrowLeft') {
+          const next = lightboxIndex - 1
+          if (next >= 0) { setLightbox(dp[next]); setLightboxIndex(next) }
+          return
+        }
         if (e.key === 'f' || e.key === 'F') {
           if (gallery?.allow_favourites) toggleFavourite({ stopPropagation: () => {} }, lightbox.id)
           return
@@ -155,7 +165,6 @@ export default function PublicGallery() {
         return
       }
 
-      // Gallery-level shortcuts (no lightbox/slideshow open)
       if (e.key === 's' || e.key === 'S') { openSlideshow(); return }
       if (e.key === 'f' || e.key === 'F') { setShowFavsOnly(v => !v); return }
       if (e.key === 'Escape')             { setShowFavsOnly(false); setActiveSection('all'); return }
@@ -163,7 +172,7 @@ export default function PublicGallery() {
 
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [slideshow, lightbox, lightboxIndex, displayPhotos, gallery, photoUrls, favourites, slidePlaying])
+  }, [slideshow, lightbox, lightboxIndex, photos, showFavsOnly, activeSection, gallery, photoUrls, favourites, slidePlaying])
 
   // Slideshow auto-advance
   useEffect(() => {
