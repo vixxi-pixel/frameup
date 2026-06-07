@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { uploadToR2 } from '../lib/r2'
 import { useAuth } from '../hooks/useAuth'
 import AppShell from '../components/AppShell'
 
@@ -78,16 +79,14 @@ export default function NewGallery() {
         const path = `${user.id}/${gallery.id}/${Date.now()}-${file.name}`
 
         try {
-          const { error: upErr } = await supabase.storage.from('gallery-photos').upload(path, file)
-          if (!upErr) {
-            await supabase.from('photos').insert({
-              gallery_id: gallery.id,
-              storage_path: path,
-              filename: file.name,
-              size_bytes: file.size,
-              sort_order: i,
-            })
-          }
+          await uploadToR2(file, path)
+          await supabase.from('photos').insert({
+            gallery_id: gallery.id,
+            storage_path: path,
+            filename: file.name,
+            size_bytes: file.size,
+            sort_order: i,
+          })
         } catch (err) {
           console.error('Upload error:', err)
         }

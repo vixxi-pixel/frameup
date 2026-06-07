@@ -1,68 +1,56 @@
-import { AwsClient } from 'aws4fetch'
-
-const R2_ACCOUNT_ID = import.meta.env.VITE_R2_ACCOUNT_ID
-const R2_ACCESS_KEY = import.meta.env.VITE_R2_ACCESS_KEY
-const R2_SECRET_KEY = import.meta.env.VITE_R2_SECRET_KEY
-const R2_BUCKET     = import.meta.env.VITE_R2_BUCKET
-const R2_ENDPOINT   = import.meta.env.VITE_R2_ENDPOINT
-
-if (!R2_ACCOUNT_ID || !R2_ACCESS_KEY || !R2_SECRET_KEY) {
-  console.warn('R2 env vars missing — storage uploads will fail.')
-}
-
-const r2 = new AwsClient({
-  accessKeyId:     R2_ACCESS_KEY,
-  secretAccessKey: R2_SECRET_KEY,
-  service: 's3',
-  region: 'auto',
-})
-
-function bucketUrl(path = '') {
-  return `${R2_ENDPOINT}/${R2_BUCKET}/${path}`
-}
+/**
+ * R2 storage client — talks to our Vercel API routes
+ * which handle the actual AWS S3 signing server-side.
+ * This means no credentials ever touch the browser.
+ */
 
 /**
- * Upload a File object to R2.
- * Returns { path, publicUrl } on success, throws on failure.
+ * Upload a File object to R2 via the /api/r2-upload proxy.
  */
 export async function uploadToR2(file, storagePath) {
-  const url = bucketUrl(storagePath)
-  const response = await r2.fetch(url, {
-    method: 'PUT',
-    headers: { 'Content-Type': file.type || 'application/octet-stream' },
+  const res = await fetch('/api/r2-upload', {
+    method: 'POST',
+    headers: {
+      'Content-Type': file.type || 'application/octet-stream',
+      'x-r2-meta': JSON.stringify({ path: storagePath, contentType: file.type }),
+    },
     body: file,
   })
-  if (!response.ok) {
-    const text = await response.text()
-    throw new Error(`R2 upload failed: ${response.status} ${text}`)
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(`Upload failed: ${err.error || res.statusText}`)
   }
+
   return { path: storagePath }
 }
 
 /**
- * Generate a presigned GET URL valid for `expiresIn` seconds (default 1 hour).
- * R2 presigned URLs use S3-style query-string signing.
+ * Get a presigned GET URL for a stored object.
+ * Valid for 1 hour by default.
  */
 export async function getR2SignedUrl(storagePath, expiresIn = 3600) {
-  const url = new URL(bucketUrl(storagePath))
-  url.searchParams.set('X-Amz-Expires', String(expiresIn))
+  const res = await fetch(`/api/r2-signed-url?path=${encodeURIComponent(storagePath)}&expires=${expiresIn}`)
 
-  // aws4fetch signs query-string presigned URLs when you pass presign: true
-  const signed = await r2.sign(
-    new Request(url.toString(), { method: 'GET' }),
-    { aws: { signQuery: true } }
-  )
-  return signed.url
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(`Signed URL failed: ${err.error || res.statusText}`)
+  }
+
+  const { url } = await res.json()
+  return url
 }
 
 /**
  * Delete an object from R2.
  */
 export async function deleteFromR2(storagePath) {
-  const url = bucketUrl(storagePath)
-  const response = await r2.fetch(url, { method: 'DELETE' })
-  if (!response.ok && response.status !== 404) {
-    const text = await response.text()
-    throw new Error(`R2 delete failed: ${response.status} ${text}`)
+  const res = await fetch(`/api/r2-delete?path=${encodeURIComponent(storagePath)}`, {
+    method: 'DELETE',
+  })
+
+  if (!res.ok && res.status !== 404) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(`Delete failed: ${err.error || res.statusText}`)
   }
 }

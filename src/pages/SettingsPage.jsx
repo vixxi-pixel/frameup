@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { supabase } from '../lib/supabase'
+import { uploadToR2, getR2SignedUrl, deleteFromR2 } from '../lib/r2'
 import { useAuth } from '../hooks/useAuth'
 import AppShell from '../components/AppShell'
 
@@ -81,26 +82,22 @@ export default function SettingsPage() {
     setUploadingLogo(true)
     const ext = logoFile.name.split('.').pop()
     const path = `logos/${user.id}/logo.${ext}`
-    const { error } = await supabase.storage
-      .from('gallery-photos')
-      .upload(path, logoFile, { upsert: true })
 
-    if (!error) {
-      const { data } = await supabase.storage
-        .from('gallery-photos')
-        .createSignedUrl(path, 60 * 60 * 24 * 365) // 1 year
-      const url = data?.signedUrl ?? null
+    try {
+      await uploadToR2(logoFile, path)
       await supabase.from('profiles').update({ logo_url: path }).eq('id', user.id)
       setLogoUrl(path)
       setLogoSaved(true)
       setTimeout(() => setLogoSaved(false), 2000)
+    } catch (err) {
+      console.error('Logo upload error:', err)
     }
     setUploadingLogo(false)
   }
 
   async function removeLogo() {
     if (!logoUrl) return
-    await supabase.storage.from('gallery-photos').remove([logoUrl])
+    try { await deleteFromR2(logoUrl) } catch (e) { console.error('R2 delete error', e) }
     await supabase.from('profiles').update({ logo_url: null }).eq('id', user.id)
     setLogoUrl(null)
     setLogoPreview(null)
@@ -319,8 +316,7 @@ function LogoImg({ path, preview }) {
   const [src, setSrc] = useState(preview ? path : null)
   useEffect(() => {
     if (preview) { setSrc(path); return }
-    supabase.storage.from('gallery-photos').createSignedUrl(path, 3600)
-      .then(({ data }) => { if (data) setSrc(data.signedUrl) })
+    getR2SignedUrl(path, 3600).then(url => setSrc(url)).catch(console.error)
   }, [path, preview])
   if (!src) return <span style={{ fontSize: '1rem', opacity: 0.4 }}>…</span>
   return <img src={src} alt="logo" style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '8px' }} />
@@ -333,8 +329,7 @@ function WatermarkPreview({ logoSrc, isPath, opacity, position }) {
 
   useEffect(() => {
     if (!isPath) { setResolvedSrc(logoSrc); return }
-    supabase.storage.from('gallery-photos').createSignedUrl(logoSrc, 3600)
-      .then(({ data }) => { if (data) setResolvedSrc(data.signedUrl) })
+    getR2SignedUrl(logoSrc, 3600).then(url => setResolvedSrc(url)).catch(console.error)
   }, [logoSrc, isPath])
 
   useEffect(() => {

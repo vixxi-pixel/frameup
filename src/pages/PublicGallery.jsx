@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
+import { getR2SignedUrl } from '../lib/r2'
 
 function getSessionToken() {
   let token = localStorage.getItem('frameup_session')
@@ -53,14 +54,12 @@ export default function PublicGallery() {
         .eq('id', gal.photographer_id)
         .single()
       if (prof?.logo_url) {
-        const { data: urlData } = await supabase.storage
-          .from('gallery-photos')
-          .createSignedUrl(prof.logo_url, 3600)
-        if (urlData?.signedUrl) {
-          setWatermarkSrc(urlData.signedUrl)
+        try {
+          const signedUrl = await getR2SignedUrl(prof.logo_url, 3600)
+          setWatermarkSrc(signedUrl)
           setWatermarkOpacity(prof.watermark_opacity ?? 0.35)
           setWatermarkPosition(prof.watermark_position ?? 'bottom-right')
-        }
+        } catch (e) { console.error('Watermark URL error', e) }
       }
     }
 
@@ -74,10 +73,10 @@ export default function PublicGallery() {
 
     const urlMap = {}
     await Promise.all((phs ?? []).map(async p => {
-      const { data } = await supabase.storage
-        .from('gallery-photos')
-        .createSignedUrl(p.storage_path, 3600)
-      if (data) urlMap[p.id] = data.signedUrl
+      try {
+        const url = await getR2SignedUrl(p.storage_path, 3600)
+        urlMap[p.id] = url
+      } catch (e) { console.error('Signed URL error', e) }
     }))
     setPhotoUrls(urlMap)
 

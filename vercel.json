@@ -1,6 +1,7 @@
 {
   "rewrites": [
     { "source": "/v2", "destination": "/landing-v2.html" },
-    { "source": "/((?!landing|sample|favicon).*)", "destination": "/" }
+    { "source": "/api/(.*)", "destination": "/api/$1" },
+    { "source": "/((?!landing|sample|favicon|api).*)", "destination": "/" }
   ]
 }
