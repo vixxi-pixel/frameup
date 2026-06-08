@@ -61,19 +61,20 @@ export default function GalleryDetail() {
     if (allPhotos.length) {
       const secs = [...new Set(allPhotos.map(p => p.section).filter(Boolean))]
       setCustomSections(secs)
-      // Load signed URLs in batches of 50 to avoid overwhelming the API
-      const urlMap = {}
-      const batchSize = 50
-      for (let i = 0; i < Math.min(allPhotos.length, 200); i += batchSize) {
-        const batch = allPhotos.slice(i, i + batchSize)
-        await Promise.all(batch.map(async p => {
-          try {
-            const url = await getR2SignedUrl(p.storage_path, 3600)
-            urlMap[p.id] = url
-          } catch (e) { console.error('Signed URL error', e) }
-        }))
-        setPhotoUrls(prev => ({ ...prev, ...urlMap }))
-      }
+    // Load signed URLs in batches of 50, all photos
+    const urlMap = {}
+    const batchSize = 50
+    for (let i = 0; i < allPhotos.length; i += batchSize) {
+      const batch = allPhotos.slice(i, i + batchSize)
+      await Promise.all(batch.map(async p => {
+        try {
+          const url = await getR2SignedUrl(p.storage_path, 3600)
+          urlMap[p.id] = url
+        } catch (e) { console.error('Signed URL error', e) }
+      }))
+      // Update state after each batch so photos appear progressively
+      setPhotoUrls(prev => ({ ...prev, ...urlMap }))
+    }
     }
   }
 
