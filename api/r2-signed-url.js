@@ -22,6 +22,8 @@ export default async function handler(req, res) {
       new GetObjectCommand({ Bucket: process.env.R2_BUCKET, Key: path }),
       { expiresIn: parseInt(expires) }
     )
+    // Cache the signed URL response for 1 hour so browser reuses it on scroll
+    res.setHeader('Cache-Control', 'public, max-age=3600, stale-while-revalidate=60')
     res.status(200).json({ url })
   } catch (err) {
     console.error('R2 signed URL error:', err)

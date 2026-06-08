@@ -539,11 +539,14 @@ function WatermarkedPhoto({ src, logoSrc, opacity, position }) {
 }
 
 // Lazy photo — only fetches signed URL when scrolled into view
+// Once loaded, the URL stays in React state so scrolling back up is instant
 function LazyPhoto({ photo, onVisible, children }) {
   const ref = useRef()
+  const observed = useRef(false)
 
   useEffect(() => {
-    if (!ref.current) return
+    if (!ref.current || observed.current) return
+    observed.current = true
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
@@ -551,7 +554,7 @@ function LazyPhoto({ photo, onVisible, children }) {
           observer.disconnect()
         }
       },
-      { rootMargin: '400px' } // start loading 400px before it comes into view
+      { rootMargin: '600px' } // start loading 600px before it enters view
     )
     observer.observe(ref.current)
     return () => observer.disconnect()
