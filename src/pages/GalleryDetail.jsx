@@ -381,7 +381,15 @@ export default function GalleryDetail() {
 
         {/* Photo grid */}
         <div className="card" style={{ overflow: 'hidden' }}>
-          <div style={tableHeader}>
+          <div style={{
+            ...tableHeader,
+            position: 'sticky',
+            top: 0,
+            zIndex: 10,
+            background: 'var(--surface)',
+            borderBottom: '1px solid var(--border)',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
+          }}>
             <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
               {/* Filter tabs */}
               {[{ key: 'all', label: `All (${photos.length})` },
@@ -440,7 +448,16 @@ export default function GalleryDetail() {
 
           {/* Selection hint */}
           {photos.length > 0 && (
-            <div style={{ padding: '0.5rem 1.25rem', fontSize: '0.75rem', color: 'var(--muted2)', borderBottom: '1px solid var(--border)', background: 'var(--surface2)' }}>
+            <div style={{
+              padding: '0.5rem 1.25rem',
+              fontSize: '0.75rem',
+              color: 'var(--muted2)',
+              borderBottom: '1px solid var(--border)',
+              background: 'var(--surface2)',
+              position: 'sticky',
+              top: '57px', // sits just below the sticky toolbar
+              zIndex: 9,
+            }}>
               Click to select · <strong>Shift+click</strong> to select a range · Select all with the button above
             </div>
           )}
@@ -483,6 +500,55 @@ export default function GalleryDetail() {
             </div>
           )}
         </div>
+
+        {/* Floating assign bar — appears at bottom when photos selected */}
+        {selectedPhotos.size > 0 && (
+          <div style={{
+            position: 'fixed',
+            bottom: '2rem',
+            left: '50%',
+            transform: 'translateX(-50%)',
+            background: 'var(--ink)',
+            border: '1px solid var(--border2)',
+            borderRadius: '100px',
+            padding: '0.75rem 1.25rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.75rem',
+            zIndex: 100,
+            boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+            whiteSpace: 'nowrap',
+          }}>
+            <span style={{ fontSize: '0.82rem', color: 'var(--warm)', fontWeight: 500 }}>
+              {selectedPhotos.size} photo{selectedPhotos.size !== 1 ? 's' : ''} selected
+            </span>
+            <div style={{ width: 1, height: 16, background: 'var(--border2)' }} />
+            <select
+              onChange={e => e.target.value && assignSectionToSelected(e.target.value)}
+              style={{
+                fontSize: '0.82rem',
+                padding: '0.3rem 0.5rem',
+                background: 'var(--surface2)',
+                border: '1px solid var(--border2)',
+                borderRadius: '6px',
+                color: 'var(--ink)',
+                fontFamily: 'inherit',
+                cursor: 'pointer',
+              }}
+              defaultValue=""
+            >
+              <option value="" disabled>Assign to section…</option>
+              {allSections.map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+            <button
+              className="btn btn-ghost"
+              onClick={() => setSelectedPhotos(new Set())}
+              style={{ fontSize: '0.78rem', padding: '0.3rem 0.75rem', color: 'var(--ink2)', borderColor: 'var(--border2)' }}
+            >
+              Clear
+            </button>
+          </div>
+        )}
 
         {/* Danger zone */}
         <div style={{ marginTop: '2rem', paddingTop: '1.5rem', borderTop: '1px solid var(--border)' }}>
