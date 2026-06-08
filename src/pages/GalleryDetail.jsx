@@ -508,42 +508,50 @@ export default function GalleryDetail() {
             bottom: '2rem',
             left: '50%',
             transform: 'translateX(-50%)',
-            background: 'var(--ink)',
-            border: '1px solid var(--border2)',
+            background: '#1A1814',
+            border: '1px solid #3A3530',
             borderRadius: '100px',
-            padding: '0.75rem 1.25rem',
+            padding: '0.6rem 0.6rem 0.6rem 1.25rem',
             display: 'flex',
             alignItems: 'center',
             gap: '0.75rem',
             zIndex: 100,
-            boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+            boxShadow: '0 8px 40px rgba(0,0,0,0.6)',
             whiteSpace: 'nowrap',
           }}>
-            <span style={{ fontSize: '0.82rem', color: 'var(--warm)', fontWeight: 500 }}>
+            <span style={{ fontSize: '0.82rem', color: '#C9A96E', fontWeight: 500 }}>
               {selectedPhotos.size} photo{selectedPhotos.size !== 1 ? 's' : ''} selected
             </span>
-            <div style={{ width: 1, height: 16, background: 'var(--border2)' }} />
+            <div style={{ width: 1, height: 16, background: '#3A3530' }} />
             <select
               onChange={e => e.target.value && assignSectionToSelected(e.target.value)}
               style={{
                 fontSize: '0.82rem',
-                padding: '0.3rem 0.5rem',
-                background: 'var(--surface2)',
-                border: '1px solid var(--border2)',
-                borderRadius: '6px',
-                color: 'var(--ink)',
+                padding: '0.4rem 0.75rem',
+                background: '#2A2520',
+                border: '1px solid #3A3530',
+                borderRadius: '100px',
+                color: '#F0EDE6',
                 fontFamily: 'inherit',
                 cursor: 'pointer',
               }}
               defaultValue=""
             >
-              <option value="" disabled>Assign to section…</option>
-              {allSections.map(s => <option key={s} value={s}>{s}</option>)}
+              <option value="" disabled style={{ background: '#1A1814' }}>Assign to section…</option>
+              {allSections.map(s => <option key={s} value={s} style={{ background: '#1A1814' }}>{s}</option>)}
             </select>
             <button
-              className="btn btn-ghost"
               onClick={() => setSelectedPhotos(new Set())}
-              style={{ fontSize: '0.78rem', padding: '0.3rem 0.75rem', color: 'var(--ink2)', borderColor: 'var(--border2)' }}
+              style={{
+                fontSize: '0.78rem',
+                padding: '0.4rem 0.85rem',
+                background: 'transparent',
+                border: '1px solid #3A3530',
+                borderRadius: '100px',
+                color: 'rgba(240,237,230,0.55)',
+                fontFamily: 'inherit',
+                cursor: 'pointer',
+              }}
             >
               Clear
             </button>
