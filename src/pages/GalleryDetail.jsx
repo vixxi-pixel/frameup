@@ -30,28 +30,50 @@ export default function GalleryDetail() {
   useEffect(() => { loadGallery() }, [id])
 
   async function loadGallery() {
-    const [{ data: gal }, { data: phs }, { count }] = await Promise.all([
+    const [{ data: gal }, { count }] = await Promise.all([
       supabase.from('galleries').select('*').eq('id', id).eq('photographer_id', user.id).single(),
-      supabase.from('photos').select('*').eq('gallery_id', id).order('sort_order'),
       supabase.from('gallery_views').select('*', { count: 'exact', head: true }).eq('gallery_id', id),
     ])
     setGallery(gal)
-    setPhotos(phs ?? [])
     setViews(count ?? 0)
+
+    // Fetch ALL photos in pages of 1000 (Supabase default limit)
+    let allPhotos = []
+    let page = 0
+    const pageSize = 1000
+    while (true) {
+      const { data: batch } = await supabase
+        .from('photos')
+        .select('*')
+        .eq('gallery_id', id)
+        .order('sort_order')
+        .range(page * pageSize, (page + 1) * pageSize - 1)
+      if (!batch || batch.length === 0) break
+      allPhotos = [...allPhotos, ...batch]
+      if (batch.length < pageSize) break
+      page++
+    }
+
+    setPhotos(allPhotos)
     setLoading(false)
 
-    // Derive custom sections from existing photos
-    if (phs?.length) {
-      const secs = [...new Set(phs.map(p => p.section).filter(Boolean))]
+    // Derive custom sections
+    if (allPhotos.length) {
+      const secs = [...new Set(allPhotos.map(p => p.section).filter(Boolean))]
       setCustomSections(secs)
+      // Load signed URLs in batches of 50 to avoid overwhelming the API
       const urlMap = {}
-      await Promise.all(phs.slice(0, 30).map(async p => {
-        try {
-          const url = await getR2SignedUrl(p.storage_path, 3600)
-          urlMap[p.id] = url
-        } catch (e) { console.error('Signed URL error', e) }
-      }))
-      setPhotoUrls(urlMap)
+      const batchSize = 50
+      for (let i = 0; i < Math.min(allPhotos.length, 200); i += batchSize) {
+        const batch = allPhotos.slice(i, i + batchSize)
+        await Promise.all(batch.map(async p => {
+          try {
+            const url = await getR2SignedUrl(p.storage_path, 3600)
+            urlMap[p.id] = url
+          } catch (e) { console.error('Signed URL error', e) }
+        }))
+        setPhotoUrls(prev => ({ ...prev, ...urlMap }))
+      }
     }
   }
 

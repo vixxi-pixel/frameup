@@ -67,18 +67,37 @@ export default function PublicGallery() {
   }
 
   async function loadPhotos(gal) {
-    const { data: phs } = await supabase
-      .from('photos').select('*').eq('gallery_id', gal.id).order('sort_order')
-    setPhotos(phs ?? [])
+    // Fetch ALL photos in pages of 1000
+    let allPhotos = []
+    let page = 0
+    const pageSize = 1000
+    while (true) {
+      const { data: batch } = await supabase
+        .from('photos')
+        .select('*')
+        .eq('gallery_id', gal.id)
+        .order('sort_order')
+        .range(page * pageSize, (page + 1) * pageSize - 1)
+      if (!batch || batch.length === 0) break
+      allPhotos = [...allPhotos, ...batch]
+      if (batch.length < pageSize) break
+      page++
+    }
+    setPhotos(allPhotos)
 
-    const urlMap = {}
-    await Promise.all((phs ?? []).map(async p => {
-      try {
-        const url = await getR2SignedUrl(p.storage_path, 3600)
-        urlMap[p.id] = url
-      } catch (e) { console.error('Signed URL error', e) }
-    }))
-    setPhotoUrls(urlMap)
+    // Load signed URLs in batches of 50, progressively
+    const batchSize = 50
+    for (let i = 0; i < allPhotos.length; i += batchSize) {
+      const batch = allPhotos.slice(i, i + batchSize)
+      const urlMap = {}
+      await Promise.all(batch.map(async p => {
+        try {
+          const url = await getR2SignedUrl(p.storage_path, 3600)
+          urlMap[p.id] = url
+        } catch (e) { console.error('Signed URL error', e) }
+      }))
+      setPhotoUrls(prev => ({ ...prev, ...urlMap }))
+    }
 
     const { data: favs } = await supabase
       .from('favourites').select('photo_id').eq('gallery_id', gal.id).eq('session_token', sessionToken)
