@@ -142,12 +142,30 @@ export default function GalleryDetail() {
     setShowUpload(false)
   }
 
-  function toggleSelectPhoto(photoId) {
-    setSelectedPhotos(prev => {
-      const s = new Set(prev)
-      s.has(photoId) ? s.delete(photoId) : s.add(photoId)
-      return s
-    })
+  const lastSelectedIndex = useRef(null)
+
+  function toggleSelectPhoto(photoId, e) {
+    const currentIndex = displayPhotos.findIndex(p => p.id === photoId)
+
+    if (e.shiftKey && lastSelectedIndex.current !== null) {
+      // Shift-click: select range between last selected and current
+      const start = Math.min(lastSelectedIndex.current, currentIndex)
+      const end   = Math.max(lastSelectedIndex.current, currentIndex)
+      const rangeIds = displayPhotos.slice(start, end + 1).map(p => p.id)
+      setSelectedPhotos(prev => {
+        const s = new Set(prev)
+        rangeIds.forEach(id => s.add(id))
+        return s
+      })
+    } else {
+      // Normal click: toggle single photo
+      setSelectedPhotos(prev => {
+        const s = new Set(prev)
+        s.has(photoId) ? s.delete(photoId) : s.add(photoId)
+        return s
+      })
+      lastSelectedIndex.current = currentIndex
+    }
   }
 
   async function assignSectionToSelected(section) {
@@ -403,13 +421,26 @@ export default function GalleryDetail() {
                   </button>
                 </>
               )}
+              <button
+                className="btn btn-ghost"
+                onClick={() => {
+                  if (selectedPhotos.size === displayPhotos.length) {
+                    setSelectedPhotos(new Set())
+                  } else {
+                    setSelectedPhotos(new Set(displayPhotos.map(p => p.id)))
+                  }
+                }}
+                style={{ fontSize: '0.75rem', padding: '0.3rem 0.65rem' }}
+              >
+                {selectedPhotos.size === displayPhotos.length ? 'Deselect all' : 'Select all'}
+              </button>
             </div>
           </div>
 
           {/* Selection hint */}
-          {photos.length > 0 && selectedPhotos.size === 0 && (
+          {photos.length > 0 && (
             <div style={{ padding: '0.5rem 1.25rem', fontSize: '0.75rem', color: 'var(--muted2)', borderBottom: '1px solid var(--border)', background: 'var(--surface2)' }}>
-              Click photos to select them, then assign a section above
+              Click to select · <strong>Shift+click</strong> to select a range · Select all with the button above
             </div>
           )}
 
@@ -427,7 +458,7 @@ export default function GalleryDetail() {
                     outline: selectedPhotos.has(p.id) ? '2px solid var(--warm)' : 'none',
                     outlineOffset: '-2px',
                   }}
-                  onClick={() => toggleSelectPhoto(p.id)}
+                  onClick={e => toggleSelectPhoto(p.id, e)}
                 >
                   {photoUrls[p.id]
                     ? <img src={photoUrls[p.id]} alt={p.filename} style={photoImg} />
