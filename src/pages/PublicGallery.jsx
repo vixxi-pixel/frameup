@@ -67,7 +67,7 @@ export default function PublicGallery() {
   }
 
   async function loadPhotos(gal) {
-    // Fetch ALL photos in pages of 1000
+    // Fetch ALL photo records (just metadata, no URLs yet)
     let allPhotos = []
     let page = 0
     const pageSize = 1000
@@ -85,19 +85,14 @@ export default function PublicGallery() {
     }
     setPhotos(allPhotos)
 
-    // Load signed URLs in batches of 50, progressively
-    const batchSize = 50
-    for (let i = 0; i < allPhotos.length; i += batchSize) {
-      const batch = allPhotos.slice(i, i + batchSize)
-      const urlMap = {}
-      await Promise.all(batch.map(async p => {
-        try {
-          const url = await getR2SignedUrl(p.storage_path, 3600)
-          urlMap[p.id] = url
-        } catch (e) { console.error('Signed URL error', e) }
-      }))
-      setPhotoUrls(prev => ({ ...prev, ...urlMap }))
-    }
+    // Eagerly load first 50 so the page feels instant
+    const first = allPhotos.slice(0, 50)
+    const urlMap = {}
+    await Promise.all(first.map(async p => {
+      try { urlMap[p.id] = await getR2SignedUrl(p.storage_path, 3600) }
+      catch (e) { console.error('URL error', e) }
+    }))
+    setPhotoUrls(urlMap)
 
     const { data: favs } = await supabase
       .from('favourites').select('photo_id').eq('gallery_id', gal.id).eq('session_token', sessionToken)
@@ -212,6 +207,14 @@ export default function PublicGallery() {
     setSlideIndex(0)
     setSlidePlaying(true)
     setSlideshow(true)
+  }
+
+  async function onPhotoVisible(photoId, storagePath) {
+    if (photoUrls[photoId]) return // already loaded
+    try {
+      const url = await getR2SignedUrl(storagePath, 3600)
+      setPhotoUrls(prev => ({ ...prev, [photoId]: url }))
+    } catch (e) { console.error('Lazy URL error', e) }
   }
 
   async function downloadAll() {
@@ -369,20 +372,22 @@ export default function PublicGallery() {
         <div style={grid}>
           {displayPhotos.map((p, i) => (
             <div key={p.id} style={cell} onClick={() => openLightbox(p, i)}>
-              {photoUrls[p.id] ? (
-                gallery.watermark_enabled && watermarkSrc ? (
-                  <WatermarkedPhoto
-                    src={photoUrls[p.id]}
-                    logoSrc={watermarkSrc}
-                    opacity={watermarkOpacity}
-                    position={watermarkPosition}
-                  />
+              <LazyPhoto photo={p} onVisible={onPhotoVisible}>
+                {photoUrls[p.id] ? (
+                  gallery.watermark_enabled && watermarkSrc ? (
+                    <WatermarkedPhoto
+                      src={photoUrls[p.id]}
+                      logoSrc={watermarkSrc}
+                      opacity={watermarkOpacity}
+                      position={watermarkPosition}
+                    />
+                  ) : (
+                    <img src={photoUrls[p.id]} alt={p.filename} style={img} />
+                  )
                 ) : (
-                  <img src={photoUrls[p.id]} alt={p.filename} style={img} />
-                )
-              ) : (
-                <div style={{ ...img, background: 'var(--surface2)' }} />
-              )}
+                  <div style={{ ...img, background: 'var(--surface2)' }} />
+                )}
+              </LazyPhoto>
               {gallery.allow_favourites && (
                 <button
                   style={{ ...favBtn, ...(favourites.has(p.id) ? favActive : {}) }}
@@ -531,6 +536,28 @@ function WatermarkedPhoto({ src, logoSrc, opacity, position }) {
       />
     </div>
   )
+}
+
+// Lazy photo — only fetches signed URL when scrolled into view
+function LazyPhoto({ photo, onVisible, children }) {
+  const ref = useRef()
+
+  useEffect(() => {
+    if (!ref.current) return
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          onVisible(photo.id, photo.storage_path)
+          observer.disconnect()
+        }
+      },
+      { rootMargin: '400px' } // start loading 400px before it comes into view
+    )
+    observer.observe(ref.current)
+    return () => observer.disconnect()
+  }, [photo.id])
+
+  return <div ref={ref} style={{ width: '100%', height: '100%' }}>{children}</div>
 }
 
 function getPositionStyle(position) {
