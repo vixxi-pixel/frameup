@@ -1,16 +1,17 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
 import { useAuth } from './hooks/useAuth'
 
-import LandingPage   from './pages/LandingPage'
-import AuthPage      from './pages/AuthPage'
-import Dashboard     from './pages/Dashboard'
-import GalleriesPage from './pages/GalleriesPage'
-import NewGallery    from './pages/NewGallery'
-import GalleryDetail from './pages/GalleryDetail'
-import StorePage     from './pages/StorePage'
-import SettingsPage  from './pages/SettingsPage'
-import PublicGallery from './pages/PublicGallery'
-import SampleGallery from './pages/SampleGallery'
+import LandingPage    from './pages/LandingPage'
+import AuthPage       from './pages/AuthPage'
+import Dashboard      from './pages/Dashboard'
+import GalleriesPage  from './pages/GalleriesPage'
+import NewGallery     from './pages/NewGallery'
+import GalleryDetail  from './pages/GalleryDetail'
+import StorePage      from './pages/StorePage'
+import SettingsPage   from './pages/SettingsPage'
+import PublicGallery  from './pages/PublicGallery'
+import SharedGallery  from './pages/SharedGallery'
+import SampleGallery  from './pages/SampleGallery'
 import AdminDashboard from './pages/AdminDashboard'
 
 function Protected({ children }) {
@@ -39,6 +40,7 @@ export default function App() {
 
       {/* Public gallery */}
       <Route path="/g/:slug"      element={<PublicGallery />} />
+      <Route path="/share/:slug"  element={<SharedGallery />} />
       <Route path="/sample"       element={<SampleGallery />} />
 
       {/* Protected — photographer app */}

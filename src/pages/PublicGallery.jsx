@@ -28,6 +28,9 @@ export default function PublicGallery() {
   const [activeSection, setActiveSection] = useState('all')
   const [zipping, setZipping] = useState(false)
   const [zipProgress, setZipProgress] = useState(0)
+  const [shareLink, setShareLink] = useState(null)
+  const [sharing, setSharing] = useState(false)
+  const [shareCopied, setShareCopied] = useState(false)
   const [slideshow, setSlideshow] = useState(false)
   const [slideIndex, setSlideIndex] = useState(0)
   const [slidePlaying, setSlidePlaying] = useState(true)
@@ -257,6 +260,34 @@ export default function PublicGallery() {
     setZipProgress(0)
   }
 
+  async function generateShareLink() {
+    if (favourites.size === 0) return
+    if (shareLink) {
+      // Already generated — just copy it again
+      navigator.clipboard.writeText(shareLink)
+      setShareCopied(true)
+      setTimeout(() => setShareCopied(false), 2000)
+      return
+    }
+    setSharing(true)
+    try {
+      const slug = Math.random().toString(36).slice(2, 9) + Math.random().toString(36).slice(2, 9)
+      const { error } = await supabase.from('share_links').insert({
+        gallery_id: gallery.id,
+        session_token: sessionToken,
+        slug,
+      })
+      if (!error) {
+        const link = `${window.location.origin}/share/${slug}`
+        setShareLink(link)
+        navigator.clipboard.writeText(link)
+        setShareCopied(true)
+        setTimeout(() => setShareCopied(false), 3000)
+      }
+    } catch (e) { console.error('Share error', e) }
+    setSharing(false)
+  }
+
   // Sections
   const sections = [...new Set(photos.map(p => p.section).filter(Boolean))]
   const hasSections = sections.length > 0
@@ -306,6 +337,16 @@ export default function PublicGallery() {
             <button className="btn btn-ghost" style={{ fontSize: '0.8rem', padding: '0.4rem 0.9rem' }}
               onClick={() => { setShowFavsOnly(v => !v); setActiveSection('all') }}>
               {showFavsOnly ? 'Show all' : `♥ Favourites (${favourites.size})`}
+            </button>
+          )}
+          {gallery.allow_favourites && favourites.size > 0 && (
+            <button
+              className="btn btn-ghost"
+              style={{ fontSize: '0.8rem', padding: '0.4rem 0.9rem', color: shareCopied ? 'var(--green)' : undefined }}
+              onClick={generateShareLink}
+              disabled={sharing}
+            >
+              {shareCopied ? '✓ Link copied!' : sharing ? 'Generating…' : '↗ Share favourites'}
             </button>
           )}
           {gallery.allow_downloads && (
