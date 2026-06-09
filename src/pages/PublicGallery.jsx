@@ -227,60 +227,31 @@ export default function PublicGallery() {
 
     try {
       const JSZip = (await import('https://esm.sh/jszip@3.10.1')).default
+      const zip = new JSZip()
+      const folder = zip.folder(gallery.name || 'gallery')
       const targets = displayPhotos
-      const CHUNK_SIZE = 50 // zip in chunks of 50 to avoid memory issues
+      let failed = 0
 
-      if (targets.length <= CHUNK_SIZE) {
-        // Small gallery — single zip
-        const zip = new JSZip()
-        const folder = zip.folder(gallery.name || 'gallery')
-
-        for (let i = 0; i < targets.length; i++) {
-          const p = targets[i]
-          try {
-            const url = photoUrls[p.id] || await getR2SignedUrl(p.storage_path, 3600)
-            const res = await fetch(url)
-            if (!res.ok) throw new Error(`HTTP ${res.status}`)
-            const blob = await res.blob()
-            folder.file(p.filename || `photo-${i + 1}.jpg`, blob)
-          } catch (e) {
-            console.error('Failed photo', p.filename, e)
-          }
-          setZipProgress(Math.round(((i + 1) / targets.length) * 100))
+      for (let i = 0; i < targets.length; i++) {
+        const p = targets[i]
+        try {
+          // Use /api/r2-fetch proxy to avoid CORS issues with direct R2 fetches
+          const res = await fetch(`/api/r2-fetch?path=${encodeURIComponent(p.storage_path)}`)
+          if (!res.ok) throw new Error(`HTTP ${res.status}`)
+          const blob = await res.blob()
+          folder.file(p.filename || `photo-${i + 1}.jpg`, blob)
+        } catch (e) {
+          console.error('Failed photo', p.filename, e)
+          failed++
         }
+        setZipProgress(Math.round(((i + 1) / targets.length) * 100))
+      }
 
-        const content = await zip.generateAsync({ type: 'blob' })
-        triggerDownload(content, `${gallery.name || 'gallery'}.zip`)
+      const content = await zip.generateAsync({ type: 'blob' })
+      triggerDownload(content, `${gallery.name || 'gallery'}.zip`)
 
-      } else {
-        // Large gallery — split into numbered zips
-        const totalChunks = Math.ceil(targets.length / CHUNK_SIZE)
-        for (let c = 0; c < totalChunks; c++) {
-          const chunk = targets.slice(c * CHUNK_SIZE, (c + 1) * CHUNK_SIZE)
-          const zip = new JSZip()
-          const folder = zip.folder(`${gallery.name || 'gallery'} (part ${c + 1})`)
-
-          for (let i = 0; i < chunk.length; i++) {
-            const p = chunk[i]
-            try {
-              const url = photoUrls[p.id] || await getR2SignedUrl(p.storage_path, 3600)
-              const res = await fetch(url)
-              if (!res.ok) throw new Error(`HTTP ${res.status}`)
-              const blob = await res.blob()
-              folder.file(p.filename || `photo-${i + 1}.jpg`, blob)
-            } catch (e) {
-              console.error('Failed photo', p.filename, e)
-            }
-            const overall = c * CHUNK_SIZE + i + 1
-            setZipProgress(Math.round((overall / targets.length) * 100))
-          }
-
-          const content = await zip.generateAsync({ type: 'blob' })
-          triggerDownload(content, `${gallery.name || 'gallery'} - part ${c + 1} of ${totalChunks}.zip`)
-
-          // Small pause between zips so browser can process
-          await new Promise(r => setTimeout(r, 800))
-        }
+      if (failed > 0) {
+        alert(`${targets.length - failed} photos downloaded. ${failed} photos could not be included.`)
       }
 
     } catch (err) {
