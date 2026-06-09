@@ -227,35 +227,62 @@ export default function PublicGallery() {
 
     try {
       const JSZip = (await import('https://esm.sh/jszip@3.10.1')).default
-      const zip = new JSZip()
-      const folder = zip.folder(gallery.name || 'gallery')
-
-      // Use all photos in current view (section/favs filter), ensuring every URL is loaded
       const targets = displayPhotos
-      let done = 0
+      const CHUNK_SIZE = 50 // zip in chunks of 50 to avoid memory issues
 
-      for (let i = 0; i < targets.length; i++) {
-        const p = targets[i]
-        try {
-          // Use cached URL or fetch a fresh one
-          const url = photoUrls[p.id] || await getR2SignedUrl(p.storage_path, 3600)
-          const res = await fetch(url)
-          const blob = await res.blob()
-          folder.file(p.filename || `photo-${i + 1}.jpg`, blob)
-        } catch (e) {
-          console.error('Failed to fetch photo', p.filename, e)
+      if (targets.length <= CHUNK_SIZE) {
+        // Small gallery — single zip
+        const zip = new JSZip()
+        const folder = zip.folder(gallery.name || 'gallery')
+
+        for (let i = 0; i < targets.length; i++) {
+          const p = targets[i]
+          try {
+            const url = photoUrls[p.id] || await getR2SignedUrl(p.storage_path, 3600)
+            const res = await fetch(url)
+            if (!res.ok) throw new Error(`HTTP ${res.status}`)
+            const blob = await res.blob()
+            folder.file(p.filename || `photo-${i + 1}.jpg`, blob)
+          } catch (e) {
+            console.error('Failed photo', p.filename, e)
+          }
+          setZipProgress(Math.round(((i + 1) / targets.length) * 100))
         }
-        done++
-        setZipProgress(Math.round((done / targets.length) * 100))
+
+        const content = await zip.generateAsync({ type: 'blob' })
+        triggerDownload(content, `${gallery.name || 'gallery'}.zip`)
+
+      } else {
+        // Large gallery — split into numbered zips
+        const totalChunks = Math.ceil(targets.length / CHUNK_SIZE)
+        for (let c = 0; c < totalChunks; c++) {
+          const chunk = targets.slice(c * CHUNK_SIZE, (c + 1) * CHUNK_SIZE)
+          const zip = new JSZip()
+          const folder = zip.folder(`${gallery.name || 'gallery'} (part ${c + 1})`)
+
+          for (let i = 0; i < chunk.length; i++) {
+            const p = chunk[i]
+            try {
+              const url = photoUrls[p.id] || await getR2SignedUrl(p.storage_path, 3600)
+              const res = await fetch(url)
+              if (!res.ok) throw new Error(`HTTP ${res.status}`)
+              const blob = await res.blob()
+              folder.file(p.filename || `photo-${i + 1}.jpg`, blob)
+            } catch (e) {
+              console.error('Failed photo', p.filename, e)
+            }
+            const overall = c * CHUNK_SIZE + i + 1
+            setZipProgress(Math.round((overall / targets.length) * 100))
+          }
+
+          const content = await zip.generateAsync({ type: 'blob' })
+          triggerDownload(content, `${gallery.name || 'gallery'} - part ${c + 1} of ${totalChunks}.zip`)
+
+          // Small pause between zips so browser can process
+          await new Promise(r => setTimeout(r, 800))
+        }
       }
 
-      const content = await zip.generateAsync({ type: 'blob' })
-      const url = URL.createObjectURL(content)
-      const a = document.createElement('a')
-      a.href = url
-      a.download = `${gallery.name || 'gallery'}.zip`
-      a.click()
-      URL.revokeObjectURL(url)
     } catch (err) {
       console.error('Zip failed:', err)
       alert('Download failed. Please try again.')
@@ -263,6 +290,20 @@ export default function PublicGallery() {
 
     setZipping(false)
     setZipProgress(0)
+  }
+
+  function triggerDownload(blob, filename) {
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.style.display = 'none'
+    a.href = url
+    a.download = filename
+    document.body.appendChild(a)
+    a.click()
+    setTimeout(() => {
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    }, 1000)
   }
 
   async function generateShareLink() {
