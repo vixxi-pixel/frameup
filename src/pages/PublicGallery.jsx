@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import { useParams } from 'react-router-dom'
 import { FixedSizeGrid } from 'react-window'
 import { supabase } from '../lib/supabase'
@@ -629,31 +629,30 @@ export default function PublicGallery() {
 // Virtual grid — only renders visible rows, massive perf win for large galleries
 function VirtualPhotoGrid({ photos, photoUrls, onPhotoVisible, onOpenLightbox, gallery, watermarkSrc, watermarkOpacity, watermarkPosition, favourites, onToggleFavourite }) {
   const containerRef = useRef()
-  const [containerWidth, setContainerWidth] = useState(window.innerWidth)
+  const [containerWidth, setContainerWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 375)
 
   useEffect(() => {
     const el = containerRef.current
     if (!el) return
+    setContainerWidth(el.offsetWidth)
     const ro = new ResizeObserver(([entry]) => setContainerWidth(entry.contentRect.width))
     ro.observe(el)
     return () => ro.disconnect()
   }, [])
 
-  // Responsive column count
   const COLS = containerWidth < 480 ? 3 : containerWidth < 768 ? 4 : containerWidth < 1200 ? 5 : 6
   const GAP = 2
   const cellSize = Math.floor((containerWidth - GAP * (COLS - 1)) / COLS)
   const rowCount = Math.ceil(photos.length / COLS)
-  const gridHeight = Math.min(window.innerHeight * 0.85, 800)
 
-  const Cell = useCallback(({ columnIndex, rowIndex, style }) => {
+  function Cell({ columnIndex, rowIndex, style }) {
     const index = rowIndex * COLS + columnIndex
     if (index >= photos.length) return <div style={style} />
     const p = photos[index]
     const url = photoUrls[p.id]
 
     return (
-      <div style={{ ...style, padding: GAP / 2 }}>
+      <div style={{ ...style, padding: 1 }}>
         <div style={{ ...cell, width: '100%', height: '100%' }} onClick={() => onOpenLightbox(p, index)}>
           <LazyPhoto photo={p} onVisible={onPhotoVisible}>
             {url ? (
@@ -677,22 +676,24 @@ function VirtualPhotoGrid({ photos, photoUrls, onPhotoVisible, onOpenLightbox, g
         </div>
       </div>
     )
-  }, [photos, photoUrls, favourites, gallery, watermarkSrc, watermarkOpacity, watermarkPosition, COLS])
+  }
 
   return (
     <div ref={containerRef} style={{ width: '100%' }}>
-      <FixedSizeGrid
-        columnCount={COLS}
-        columnWidth={cellSize + GAP}
-        rowCount={rowCount}
-        rowHeight={cellSize + GAP}
-        height={rowCount * (cellSize + GAP)}
-        width={containerWidth}
-        overscanRowCount={3}
-        style={{ overflow: 'visible' }}
-      >
-        {Cell}
-      </FixedSizeGrid>
+      {containerWidth > 0 && (
+        <FixedSizeGrid
+          columnCount={COLS}
+          columnWidth={cellSize + GAP}
+          rowCount={rowCount}
+          rowHeight={cellSize + GAP}
+          height={rowCount * (cellSize + GAP)}
+          width={containerWidth}
+          overscanRowCount={3}
+          style={{ overflow: 'visible' }}
+        >
+          {Cell}
+        </FixedSizeGrid>
+      )}
     </div>
   )
 }
