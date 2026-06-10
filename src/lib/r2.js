@@ -42,8 +42,26 @@ export async function getR2SignedUrl(storagePath, expiresIn = 3600) {
 }
 
 /**
- * Delete an object from R2.
+ * Get presigned GET URLs for multiple paths in a single API call.
+ * Returns a map of { storagePath: signedUrl }
  */
+export async function getBatchR2SignedUrls(storagePaths) {
+  if (!storagePaths.length) return {}
+
+  const res = await fetch('/api/r2-signed-urls', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ paths: storagePaths }),
+  })
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}))
+    throw new Error(`Batch signed URLs failed: ${err.error || res.statusText}`)
+  }
+
+  const { urls } = await res.json()
+  return urls
+}
 export async function deleteFromR2(storagePath) {
   const res = await fetch(`/api/r2-delete?path=${encodeURIComponent(storagePath)}`, {
     method: 'DELETE',

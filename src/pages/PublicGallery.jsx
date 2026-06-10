@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { getR2SignedUrl } from '../lib/r2'
+import { getR2SignedUrl, getBatchR2SignedUrls } from '../lib/r2'
 
 function getSessionToken() {
   let token = localStorage.getItem('frameup_session')
@@ -70,7 +70,7 @@ export default function PublicGallery() {
   }
 
   async function loadPhotos(gal) {
-    // Fetch ALL photo records (just metadata, no URLs yet)
+    // Fetch ALL photo records (just metadata)
     let allPhotos = []
     let page = 0
     const pageSize = 1000
@@ -88,14 +88,36 @@ export default function PublicGallery() {
     }
     setPhotos(allPhotos)
 
-    // Eagerly load first 50 so the page feels instant
-    const first = allPhotos.slice(0, 50)
-    const urlMap = {}
-    await Promise.all(first.map(async p => {
-      try { urlMap[p.id] = await getR2SignedUrl(p.storage_path, 3600) }
-      catch (e) { console.error('URL error', e) }
-    }))
-    setPhotoUrls(urlMap)
+    // Batch-load first 200 URLs in one API call so the page feels instant
+    const first = allPhotos.slice(0, 200)
+    try {
+      const urls = await getBatchR2SignedUrls(first.map(p => p.storage_path))
+      // Map from storage_path back to photo id
+      const urlMap = {}
+      first.forEach(p => { if (urls[p.storage_path]) urlMap[p.id] = urls[p.storage_path] })
+      setPhotoUrls(urlMap)
+    } catch (e) {
+      console.error('Batch URL error', e)
+    }
+
+    // Load remaining photos in background batches of 200
+    if (allPhotos.length > 200) {
+      const rest = allPhotos.slice(200)
+      const batchSize = 200
+      for (let i = 0; i < rest.length; i += batchSize) {
+        const batch = rest.slice(i, i + batchSize)
+        try {
+          const urls = await getBatchR2SignedUrls(batch.map(p => p.storage_path))
+          setPhotoUrls(prev => {
+            const m = { ...prev }
+            batch.forEach(p => { if (urls[p.storage_path]) m[p.id] = urls[p.storage_path] })
+            return m
+          })
+        } catch (e) {
+          console.error('Batch URL error', e)
+        }
+      }
+    }
 
     const { data: favs } = await supabase
       .from('favourites').select('photo_id').eq('gallery_id', gal.id).eq('session_token', sessionToken)
@@ -213,7 +235,7 @@ export default function PublicGallery() {
   }
 
   async function onPhotoVisible(photoId, storagePath) {
-    if (photoUrls[photoId]) return // already loaded
+    if (photoUrls[photoId]) return // already loaded by batch
     try {
       const url = await getR2SignedUrl(storagePath, 3600)
       setPhotoUrls(prev => ({ ...prev, [photoId]: url }))

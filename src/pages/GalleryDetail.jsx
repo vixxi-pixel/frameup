@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
-import { uploadToR2, getR2SignedUrl, deleteFromR2 } from '../lib/r2'
+import { uploadToR2, getR2SignedUrl, getBatchR2SignedUrls, deleteFromR2 } from '../lib/r2'
 import { useAuth } from '../hooks/useAuth'
 import AppShell from '../components/AppShell'
 
@@ -61,19 +61,18 @@ export default function GalleryDetail() {
     if (allPhotos.length) {
       const secs = [...new Set(allPhotos.map(p => p.section).filter(Boolean))]
       setCustomSections(secs)
-    // Load signed URLs in batches of 50, all photos
-    const urlMap = {}
-    const batchSize = 50
+    // Load signed URLs in batches of 200 via single API call each
+    const batchSize = 200
     for (let i = 0; i < allPhotos.length; i += batchSize) {
       const batch = allPhotos.slice(i, i + batchSize)
-      await Promise.all(batch.map(async p => {
-        try {
-          const url = await getR2SignedUrl(p.storage_path, 3600)
-          urlMap[p.id] = url
-        } catch (e) { console.error('Signed URL error', e) }
-      }))
-      // Update state after each batch so photos appear progressively
-      setPhotoUrls(prev => ({ ...prev, ...urlMap }))
+      try {
+        const urls = await getBatchR2SignedUrls(batch.map(p => p.storage_path))
+        setPhotoUrls(prev => {
+          const m = { ...prev }
+          batch.forEach(p => { if (urls[p.storage_path]) m[p.id] = urls[p.storage_path] })
+          return m
+        })
+      } catch (e) { console.error('Batch URL error', e) }
     }
     }
   }
