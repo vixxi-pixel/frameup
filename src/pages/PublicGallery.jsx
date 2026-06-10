@@ -374,14 +374,14 @@ export default function PublicGallery() {
         </div>
       </header>
 
-      {/* Keyboard shortcuts hint — hidden on mobile */}
+      {/* Keyboard shortcuts hint — desktop only */}
       <div style={{
         padding: '0.4rem 1rem',
         background: 'var(--surface2)',
         borderBottom: '1px solid var(--border)',
         display: 'flex', gap: '1.25rem', flexWrap: 'wrap',
         overflow: 'hidden',
-      }}>
+      }} className="desktop-only">
         {[
           { key: '← →', label: 'Navigate' },
           { key: 'F', label: 'Favourite' },
@@ -402,22 +402,48 @@ export default function PublicGallery() {
 
       {/* Section tabs */}
       {hasSections && !showFavsOnly && (
-        <div style={sectionBar}>
-          <button
-            onClick={() => setActiveSection('all')}
-            style={{ ...sectionTab, ...(activeSection === 'all' ? sectionTabActive : {}) }}
-          >
-            All ({photos.length})
-          </button>
-          {sections.map(sec => (
+        <div style={{ position: 'relative' }}>
+          <div style={{
+            ...sectionBar,
+            maskImage: sections.length > 3
+              ? 'linear-gradient(to right, transparent 0%, black 3%, black 88%, transparent 100%)'
+              : undefined,
+            WebkitMaskImage: sections.length > 3
+              ? 'linear-gradient(to right, transparent 0%, black 3%, black 88%, transparent 100%)'
+              : undefined,
+          }}>
             <button
-              key={sec}
-              onClick={() => setActiveSection(sec)}
-              style={{ ...sectionTab, ...(activeSection === sec ? sectionTabActive : {}) }}
+              onClick={() => setActiveSection('all')}
+              style={{ ...sectionTab, ...(activeSection === 'all' ? sectionTabActive : {}) }}
             >
-              {sec} ({photos.filter(p => p.section === sec).length})
+              All ({photos.length})
             </button>
-          ))}
+            {sections.map(sec => (
+              <button
+                key={sec}
+                onClick={() => setActiveSection(sec)}
+                style={{ ...sectionTab, ...(activeSection === sec ? sectionTabActive : {}) }}
+              >
+                {sec} ({photos.filter(p => p.section === sec).length})
+              </button>
+            ))}
+          </div>
+          {/* Scroll hint — only shows when there are many sections */}
+          {sections.length > 3 && (
+            <div style={{
+              position: 'absolute',
+              right: 0,
+              top: 0,
+              bottom: 0,
+              width: '40px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              pointerEvents: 'none',
+              color: 'var(--muted)',
+              fontSize: '0.75rem',
+            }}>›</div>
+          )}
         </div>
       )}
 
@@ -638,7 +664,7 @@ const loadingPage = { minHeight: '100vh', display: 'flex', alignItems: 'center',
 const header = { padding: '0.85rem 1rem', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', background: 'var(--surface)', flexWrap: 'wrap', gap: '0.75rem' }
 const galleryTitle = { fontFamily: "'DM Serif Display', serif", fontSize: '1.1rem', color: 'var(--ink)' }
 const galleryClient = { fontSize: '0.78rem', color: 'var(--muted)', marginTop: '0.15rem' }
-const sectionBar = { display: 'flex', gap: '0', overflowX: 'auto', borderBottom: '1px solid var(--border)', background: 'var(--surface)', padding: '0 0.75rem', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none' }
+const sectionBar = { display: 'flex', gap: '0', overflowX: 'auto', borderBottom: '1px solid var(--border)', background: 'var(--surface)', padding: '0 0.75rem', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', msOverflowStyle: 'none' }
 const sectionTab = { padding: '0.6rem 0.9rem', fontSize: '0.8rem', color: 'var(--muted)', background: 'transparent', border: 'none', borderBottom: '2px solid transparent', marginBottom: '-1px', cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap', transition: 'all 0.15s', flexShrink: 0 }
 const sectionTabActive = { color: 'var(--warm)', borderBottomColor: 'var(--warm)', fontWeight: 500 }
 const grid = { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '2px', padding: '2px' }

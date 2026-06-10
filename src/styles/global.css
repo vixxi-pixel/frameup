@@ -126,3 +126,8 @@ label.field-label {
   color: var(--muted);
   font-size: 0.875rem;
 }
+
+/* Utility — hide on mobile */
+@media (max-width: 640px) {
+  .desktop-only { display: none !important; }
+}
