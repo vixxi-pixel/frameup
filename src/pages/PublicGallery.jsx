@@ -339,9 +339,27 @@ export default function PublicGallery() {
     <div style={{ minHeight: '100vh', background: 'var(--bg)', overflowX: 'hidden', maxWidth: '100vw' }}>
       {/* Header */}
       <header style={header}>
-        <div>
-          <h1 style={galleryTitle}>{gallery.name}</h1>
-          {gallery.client_name && <p style={galleryClient}>{gallery.client_name}</p>}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+          {/* frame.up logo badge */}
+          <a href="/" style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.3rem',
+            background: 'var(--warm-bg)',
+            border: '1px solid var(--border2)',
+            borderRadius: '6px',
+            padding: '0.3rem 0.6rem',
+            textDecoration: 'none',
+            flexShrink: 0,
+          }}>
+            <span style={{ fontFamily: "'DM Serif Display', serif", fontSize: '0.85rem', color: 'var(--ink)', letterSpacing: '-0.01em' }}>
+              frame<span style={{ color: 'var(--warm)' }}>.</span>up
+            </span>
+          </a>
+          <div>
+            <h1 style={galleryTitle}>{gallery.name}</h1>
+            {gallery.client_name && <p style={galleryClient}>{gallery.client_name}</p>}
+          </div>
         </div>
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
           <span style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>{displayPhotos.length} photos</span>
@@ -592,7 +610,12 @@ export default function PublicGallery() {
       )}
 
       <footer style={footerStyle}>
-        <span style={{ fontFamily: "'DM Serif Display', serif" }}>frame<span style={{ color: 'var(--warm)' }}>.</span>up</span>
+        <a href="/" style={{ textDecoration: 'none', display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: '0.25rem' }}>
+          <span style={{ fontFamily: "'DM Serif Display', serif", fontSize: '1.1rem', color: 'var(--ink)', letterSpacing: '-0.01em' }}>
+            frame<span style={{ color: 'var(--warm)' }}>.</span>up
+          </span>
+          <span style={{ fontSize: '0.7rem', color: 'var(--muted2)', letterSpacing: '0.04em' }}>Gallery delivery for photographers</span>
+        </a>
       </footer>
     </div>
   )
