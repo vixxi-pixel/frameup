@@ -1,5 +1,6 @@
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { useParams } from 'react-router-dom'
+import { FixedSizeGrid } from 'react-window'
 import { supabase } from '../lib/supabase'
 import { getR2SignedUrl, getBatchR2SignedUrls } from '../lib/r2'
 
@@ -493,36 +494,18 @@ export default function PublicGallery() {
           No photos here yet.
         </div>
       ) : (
-        <div style={grid} className="photo-grid">
-          {displayPhotos.map((p, i) => (
-            <div key={p.id} style={cell} onClick={() => openLightbox(p, i)}>
-              <LazyPhoto photo={p} onVisible={onPhotoVisible}>
-                {photoUrls[p.id] ? (
-                  gallery.watermark_enabled && watermarkSrc ? (
-                    <WatermarkedPhoto
-                      src={photoUrls[p.id]}
-                      logoSrc={watermarkSrc}
-                      opacity={watermarkOpacity}
-                      position={watermarkPosition}
-                    />
-                  ) : (
-                    <img src={photoUrls[p.id]} alt={p.filename} style={img} />
-                  )
-                ) : (
-                  <div style={{ ...img, background: 'var(--surface2)' }} />
-                )}
-              </LazyPhoto>
-              {gallery.allow_favourites && (
-                <button
-                  style={{ ...favBtn, ...(favourites.has(p.id) ? favActive : {}) }}
-                  onClick={e => toggleFavourite(e, p.id)}
-                >
-                  {favourites.has(p.id) ? '♥' : '♡'}
-                </button>
-              )}
-            </div>
-          ))}
-        </div>
+        <VirtualPhotoGrid
+          photos={displayPhotos}
+          photoUrls={photoUrls}
+          onPhotoVisible={onPhotoVisible}
+          onOpenLightbox={openLightbox}
+          gallery={gallery}
+          watermarkSrc={watermarkSrc}
+          watermarkOpacity={watermarkOpacity}
+          watermarkPosition={watermarkPosition}
+          favourites={favourites}
+          onToggleFavourite={toggleFavourite}
+        />
       )}
 
       {/* Lightbox */}
@@ -639,6 +622,77 @@ export default function PublicGallery() {
           <span style={{ fontSize: '0.7rem', color: 'var(--muted2)', letterSpacing: '0.04em' }}>Gallery delivery for photographers</span>
         </a>
       </footer>
+    </div>
+  )
+}
+
+// Virtual grid — only renders visible rows, massive perf win for large galleries
+function VirtualPhotoGrid({ photos, photoUrls, onPhotoVisible, onOpenLightbox, gallery, watermarkSrc, watermarkOpacity, watermarkPosition, favourites, onToggleFavourite }) {
+  const containerRef = useRef()
+  const [containerWidth, setContainerWidth] = useState(window.innerWidth)
+
+  useEffect(() => {
+    const el = containerRef.current
+    if (!el) return
+    const ro = new ResizeObserver(([entry]) => setContainerWidth(entry.contentRect.width))
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [])
+
+  // Responsive column count
+  const COLS = containerWidth < 480 ? 3 : containerWidth < 768 ? 4 : containerWidth < 1200 ? 5 : 6
+  const GAP = 2
+  const cellSize = Math.floor((containerWidth - GAP * (COLS - 1)) / COLS)
+  const rowCount = Math.ceil(photos.length / COLS)
+  const gridHeight = Math.min(window.innerHeight * 0.85, 800)
+
+  const Cell = useCallback(({ columnIndex, rowIndex, style }) => {
+    const index = rowIndex * COLS + columnIndex
+    if (index >= photos.length) return <div style={style} />
+    const p = photos[index]
+    const url = photoUrls[p.id]
+
+    return (
+      <div style={{ ...style, padding: GAP / 2 }}>
+        <div style={{ ...cell, width: '100%', height: '100%' }} onClick={() => onOpenLightbox(p, index)}>
+          <LazyPhoto photo={p} onVisible={onPhotoVisible}>
+            {url ? (
+              gallery.watermark_enabled && watermarkSrc ? (
+                <WatermarkedPhoto src={url} logoSrc={watermarkSrc} opacity={watermarkOpacity} position={watermarkPosition} />
+              ) : (
+                <img src={url} alt={p.filename} style={img} />
+              )
+            ) : (
+              <div style={{ ...img, background: 'var(--surface2)' }} />
+            )}
+          </LazyPhoto>
+          {gallery.allow_favourites && (
+            <button
+              style={{ ...favBtn, ...(favourites.has(p.id) ? favActive : {}) }}
+              onClick={e => onToggleFavourite(e, p.id)}
+            >
+              {favourites.has(p.id) ? '♥' : '♡'}
+            </button>
+          )}
+        </div>
+      </div>
+    )
+  }, [photos, photoUrls, favourites, gallery, watermarkSrc, watermarkOpacity, watermarkPosition, COLS])
+
+  return (
+    <div ref={containerRef} style={{ width: '100%' }}>
+      <FixedSizeGrid
+        columnCount={COLS}
+        columnWidth={cellSize + GAP}
+        rowCount={rowCount}
+        rowHeight={cellSize + GAP}
+        height={rowCount * (cellSize + GAP)}
+        width={containerWidth}
+        overscanRowCount={3}
+        style={{ overflow: 'visible' }}
+      >
+        {Cell}
+      </FixedSizeGrid>
     </div>
   )
 }
