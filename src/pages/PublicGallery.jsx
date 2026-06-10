@@ -1,6 +1,5 @@
 import { useEffect, useState, useRef } from 'react'
 import { useParams } from 'react-router-dom'
-import { FixedSizeGrid } from 'react-window'
 import { supabase } from '../lib/supabase'
 import { getR2SignedUrl, getBatchR2SignedUrls } from '../lib/r2'
 
@@ -626,74 +625,77 @@ export default function PublicGallery() {
   )
 }
 
-// Virtual grid — only renders visible rows, massive perf win for large galleries
+// Custom virtual grid — no dependencies, renders only visible rows
 function VirtualPhotoGrid({ photos, photoUrls, onPhotoVisible, onOpenLightbox, gallery, watermarkSrc, watermarkOpacity, watermarkPosition, favourites, onToggleFavourite }) {
   const containerRef = useRef()
-  const [containerWidth, setContainerWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 375)
+  const [containerWidth, setContainerWidth] = useState(375)
+  const [scrollTop, setScrollTop] = useState(0)
 
   useEffect(() => {
     const el = containerRef.current
     if (!el) return
     setContainerWidth(el.offsetWidth)
-    const ro = new ResizeObserver(([entry]) => setContainerWidth(entry.contentRect.width))
+    const ro = new ResizeObserver(([e]) => setContainerWidth(e.contentRect.width))
     ro.observe(el)
     return () => ro.disconnect()
   }, [])
 
+  useEffect(() => {
+    const onScroll = () => setScrollTop(window.scrollY)
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
   const COLS = containerWidth < 480 ? 3 : containerWidth < 768 ? 4 : containerWidth < 1200 ? 5 : 6
-  const GAP = 2
-  const cellSize = Math.floor((containerWidth - GAP * (COLS - 1)) / COLS)
+  const cellSize = Math.floor(containerWidth / COLS)
   const rowCount = Math.ceil(photos.length / COLS)
+  const totalHeight = rowCount * cellSize
 
-  function Cell({ columnIndex, rowIndex, style }) {
-    const index = rowIndex * COLS + columnIndex
-    if (index >= photos.length) return <div style={style} />
-    const p = photos[index]
-    const url = photoUrls[p.id]
+  // Work out which rows are visible + buffer
+  const containerTop = containerRef.current?.getBoundingClientRect().top + window.scrollY || 0
+  const viewportH = window.innerHeight
+  const relScroll = scrollTop - containerTop
+  const firstRow = Math.max(0, Math.floor((relScroll - viewportH) / cellSize))
+  const lastRow = Math.min(rowCount - 1, Math.ceil((relScroll + viewportH * 2) / cellSize))
 
-    return (
-      <div style={{ ...style, padding: 1 }}>
-        <div style={{ ...cell, width: '100%', height: '100%' }} onClick={() => onOpenLightbox(p, index)}>
-          <LazyPhoto photo={p} onVisible={onPhotoVisible}>
-            {url ? (
-              gallery.watermark_enabled && watermarkSrc ? (
-                <WatermarkedPhoto src={url} logoSrc={watermarkSrc} opacity={watermarkOpacity} position={watermarkPosition} />
-              ) : (
-                <img src={url} alt={p.filename} style={img} />
-              )
-            ) : (
-              <div style={{ ...img, background: 'var(--surface2)' }} />
-            )}
-          </LazyPhoto>
-          {gallery.allow_favourites && (
-            <button
-              style={{ ...favBtn, ...(favourites.has(p.id) ? favActive : {}) }}
-              onClick={e => onToggleFavourite(e, p.id)}
-            >
-              {favourites.has(p.id) ? '♥' : '♡'}
-            </button>
-          )}
-        </div>
-      </div>
-    )
-  }
+  const visibleRows = []
+  for (let r = firstRow; r <= lastRow; r++) visibleRows.push(r)
 
   return (
-    <div ref={containerRef} style={{ width: '100%' }}>
-      {containerWidth > 0 && (
-        <FixedSizeGrid
-          columnCount={COLS}
-          columnWidth={cellSize + GAP}
-          rowCount={rowCount}
-          rowHeight={cellSize + GAP}
-          height={rowCount * (cellSize + GAP)}
-          width={containerWidth}
-          overscanRowCount={3}
-          style={{ overflow: 'visible' }}
-        >
-          {Cell}
-        </FixedSizeGrid>
-      )}
+    <div ref={containerRef} style={{ width: '100%', position: 'relative', height: totalHeight }}>
+      {visibleRows.map(rowIndex => (
+        <div key={rowIndex} style={{ position: 'absolute', top: rowIndex * cellSize, left: 0, right: 0, display: 'flex' }}>
+          {Array.from({ length: COLS }).map((_, colIndex) => {
+            const index = rowIndex * COLS + colIndex
+            if (index >= photos.length) return <div key={colIndex} style={{ width: cellSize, height: cellSize }} />
+            const p = photos[index]
+            const url = photoUrls[p.id]
+            return (
+              <div key={p.id} style={{ width: cellSize, height: cellSize, flexShrink: 0, padding: 1 }}>
+                <div style={{ ...cell, width: '100%', height: '100%' }} onClick={() => onOpenLightbox(p, index)}>
+                  <LazyPhoto photo={p} onVisible={onPhotoVisible}>
+                    {url ? (
+                      gallery.watermark_enabled && watermarkSrc
+                        ? <WatermarkedPhoto src={url} logoSrc={watermarkSrc} opacity={watermarkOpacity} position={watermarkPosition} />
+                        : <img src={url} alt={p.filename} style={img} />
+                    ) : (
+                      <div style={{ ...img, background: 'var(--surface2)' }} />
+                    )}
+                  </LazyPhoto>
+                  {gallery.allow_favourites && (
+                    <button
+                      style={{ ...favBtn, ...(favourites.has(p.id) ? favActive : {}) }}
+                      onClick={e => onToggleFavourite(e, p.id)}
+                    >
+                      {favourites.has(p.id) ? '♥' : '♡'}
+                    </button>
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      ))}
     </div>
   )
 }
