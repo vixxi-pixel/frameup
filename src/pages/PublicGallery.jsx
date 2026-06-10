@@ -336,50 +336,51 @@ export default function PublicGallery() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg)' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg)', overflowX: 'hidden', maxWidth: '100vw' }}>
       {/* Header */}
       <header style={header}>
         <div>
           <h1 style={galleryTitle}>{gallery.name}</h1>
           {gallery.client_name && <p style={galleryClient}>{gallery.client_name}</p>}
         </div>
-        <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: '0.8rem', color: 'var(--muted)' }}>{displayPhotos.length} photos</span>
+        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+          <span style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>{displayPhotos.length} photos</span>
           {displayPhotos.length > 0 && (
-            <button className="btn btn-ghost" style={{ fontSize: '0.8rem', padding: '0.4rem 0.9rem' }} onClick={openSlideshow}>
-              ▶ Slideshow
+            <button className="btn btn-ghost" style={{ fontSize: '0.75rem', padding: '0.35rem 0.75rem' }} onClick={openSlideshow}>
+              ▶
             </button>
           )}
           {gallery.allow_favourites && (
-            <button className="btn btn-ghost" style={{ fontSize: '0.8rem', padding: '0.4rem 0.9rem' }}
+            <button className="btn btn-ghost" style={{ fontSize: '0.75rem', padding: '0.35rem 0.75rem' }}
               onClick={() => { setShowFavsOnly(v => !v); setActiveSection('all') }}>
-              {showFavsOnly ? 'Show all' : `♥ Favourites (${favourites.size})`}
+              {showFavsOnly ? 'All' : `♥ ${favourites.size}`}
             </button>
           )}
           {gallery.allow_favourites && favourites.size > 0 && (
             <button
               className="btn btn-ghost"
-              style={{ fontSize: '0.8rem', padding: '0.4rem 0.9rem', color: shareCopied ? 'var(--green)' : undefined }}
+              style={{ fontSize: '0.75rem', padding: '0.35rem 0.75rem', color: shareCopied ? 'var(--green)' : undefined }}
               onClick={generateShareLink}
               disabled={sharing}
             >
-              {shareCopied ? '✓ Link copied!' : sharing ? 'Generating…' : '↗ Share favourites'}
+              {shareCopied ? '✓ Copied!' : sharing ? '…' : '↗ Share'}
             </button>
           )}
           {gallery.allow_downloads && (
-            <button className="btn btn-gold" style={{ fontSize: '0.8rem', minWidth: '120px' }} onClick={downloadAll} disabled={zipping}>
-              {zipping ? `Zipping… ${zipProgress}%` : '↓ Download all'}
+            <button className="btn btn-gold" style={{ fontSize: '0.75rem', padding: '0.35rem 0.75rem' }} onClick={downloadAll} disabled={zipping}>
+              {zipping ? `${zipProgress}%` : '↓ Download'}
             </button>
           )}
         </div>
       </header>
 
-      {/* Keyboard shortcuts hint */}
+      {/* Keyboard shortcuts hint — hidden on mobile */}
       <div style={{
-        padding: '0.5rem 2rem',
+        padding: '0.4rem 1rem',
         background: 'var(--surface2)',
         borderBottom: '1px solid var(--border)',
-        display: 'flex', gap: '1.5rem', flexWrap: 'wrap',
+        display: 'flex', gap: '1.25rem', flexWrap: 'wrap',
+        overflow: 'hidden',
       }}>
         {[
           { key: '← →', label: 'Navigate' },
@@ -388,14 +389,13 @@ export default function PublicGallery() {
           { key: 'D', label: 'Download' },
           { key: 'Esc', label: 'Close' },
         ].map(s => (
-          <div key={s.key} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+          <div key={s.key} style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
             <kbd style={{
               background: 'var(--surface3)', border: '1px solid var(--border2)',
-              borderRadius: '4px', padding: '1px 6px',
-              fontSize: '0.65rem', color: 'var(--muted)', fontFamily: 'inherit',
-              letterSpacing: '0.02em',
+              borderRadius: '4px', padding: '1px 5px',
+              fontSize: '0.6rem', color: 'var(--muted)', fontFamily: 'inherit',
             }}>{s.key}</kbd>
-            <span style={{ fontSize: '0.7rem', color: 'var(--muted2)' }}>{s.label}</span>
+            <span style={{ fontSize: '0.65rem', color: 'var(--muted2)' }}>{s.label}</span>
           </div>
         ))}
       </div>
@@ -635,31 +635,31 @@ function getPositionStyle(position) {
 }
 
 const loadingPage = { minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '1rem', background: 'var(--bg)' }
-const header = { padding: '1.5rem 2rem', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'var(--surface)', flexWrap: 'wrap', gap: '1rem' }
-const galleryTitle = { fontFamily: "'DM Serif Display', serif", fontSize: '1.4rem', color: 'var(--ink)' }
-const galleryClient = { fontSize: '0.85rem', color: 'var(--muted)', marginTop: '0.2rem' }
-const sectionBar = { display: 'flex', gap: '0', overflowX: 'auto', borderBottom: '1px solid var(--border)', background: 'var(--surface)', padding: '0 1.5rem' }
-const sectionTab = { padding: '0.75rem 1.25rem', fontSize: '0.875rem', color: 'var(--muted)', background: 'transparent', border: 'none', borderBottom: '2px solid transparent', marginBottom: '-1px', cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap', transition: 'all 0.15s' }
+const header = { padding: '0.85rem 1rem', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', background: 'var(--surface)', flexWrap: 'wrap', gap: '0.75rem' }
+const galleryTitle = { fontFamily: "'DM Serif Display', serif", fontSize: '1.1rem', color: 'var(--ink)' }
+const galleryClient = { fontSize: '0.78rem', color: 'var(--muted)', marginTop: '0.15rem' }
+const sectionBar = { display: 'flex', gap: '0', overflowX: 'auto', borderBottom: '1px solid var(--border)', background: 'var(--surface)', padding: '0 0.75rem', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none' }
+const sectionTab = { padding: '0.6rem 0.9rem', fontSize: '0.8rem', color: 'var(--muted)', background: 'transparent', border: 'none', borderBottom: '2px solid transparent', marginBottom: '-1px', cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap', transition: 'all 0.15s', flexShrink: 0 }
 const sectionTabActive = { color: 'var(--warm)', borderBottomColor: 'var(--warm)', fontWeight: 500 }
-const grid = { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '3px', padding: '3px' }
+const grid = { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '2px', padding: '2px' }
 const cell = { position: 'relative', aspectRatio: '1', overflow: 'hidden', background: 'var(--surface2)', cursor: 'pointer' }
 const img  = { width: '100%', height: '100%', objectFit: 'cover', display: 'block', transition: 'transform 0.2s' }
-const favBtn = { position: 'absolute', top: '8px', right: '8px', width: '30px', height: '30px', background: 'rgba(0,0,0,0.5)', border: 'none', borderRadius: '50%', color: '#fff', fontSize: '0.9rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.15s' }
+const favBtn = { position: 'absolute', top: '6px', right: '6px', width: '28px', height: '28px', background: 'rgba(0,0,0,0.5)', border: 'none', borderRadius: '50%', color: '#fff', fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background 0.15s' }
 const favActive = { background: 'var(--warm)', color: '#0E0D0B' }
-const lightboxOverlay = { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.95)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '2rem', flexDirection: 'column', gap: '1rem' }
-const lightboxClose = { position: 'fixed', top: '1.5rem', right: '1.5rem', background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff', width: '36px', height: '36px', borderRadius: '50%', fontSize: '0.9rem', cursor: 'pointer' }
-const lightboxNav2 = { position: 'fixed', top: '50%', transform: 'translateY(-50%)', background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff', width: '44px', height: '44px', borderRadius: '50%', fontSize: '1.5rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }
-const lightboxImg = { maxWidth: '90vw', maxHeight: '80vh', objectFit: 'contain', borderRadius: '4px' }
+const lightboxOverlay = { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.95)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '1rem', flexDirection: 'column', gap: '1rem' }
+const lightboxClose = { position: 'fixed', top: '1rem', right: '1rem', background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff', width: '36px', height: '36px', borderRadius: '50%', fontSize: '0.9rem', cursor: 'pointer' }
+const lightboxNav2 = { position: 'fixed', top: '50%', transform: 'translateY(-50%)', background: 'rgba(255,255,255,0.15)', border: 'none', color: '#fff', width: '40px', height: '40px', borderRadius: '50%', fontSize: '1.5rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }
+const lightboxImg = { maxWidth: '95vw', maxHeight: '82vh', objectFit: 'contain', borderRadius: '4px' }
 const lightboxFooter = { display: 'flex', alignItems: 'center', gap: '1rem' }
-const pwCard = { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '16px', padding: '2.5rem', width: '100%', maxWidth: '380px' }
+const pwCard = { background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '16px', padding: '2rem 1.5rem', width: '100%', maxWidth: '380px' }
 const logoStyle = { fontFamily: "'DM Serif Display', serif", fontSize: '1.2rem', marginBottom: '1.25rem', color: 'var(--ink)' }
 const pwTitle = { fontSize: '1.3rem', fontFamily: "'DM Serif Display', serif", color: 'var(--ink)', marginBottom: '0.35rem' }
-const footerStyle = { padding: '2rem', textAlign: 'center', fontSize: '0.85rem', color: 'var(--muted)', borderTop: '1px solid var(--border)', marginTop: '2rem' }
+const footerStyle = { padding: '2rem 1rem', textAlign: 'center', fontSize: '0.85rem', color: 'var(--muted)', borderTop: '1px solid var(--border)', marginTop: '2rem' }
 const slideshowOverlay = { position: 'fixed', inset: 0, background: '#000', zIndex: 2000, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }
-const slideshowTop = { position: 'absolute', top: 0, left: 0, right: 0, padding: '1rem 1.5rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'linear-gradient(to bottom, rgba(0,0,0,0.7), transparent)', zIndex: 10 }
+const slideshowTop = { position: 'absolute', top: 0, left: 0, right: 0, padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'linear-gradient(to bottom, rgba(0,0,0,0.7), transparent)', zIndex: 10 }
 const slideBtn = { background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff', width: '36px', height: '36px', borderRadius: '50%', fontSize: '1.1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'inherit' }
 const slideProgressBar = { position: 'absolute', top: 0, left: 0, right: 0, height: '2px', background: 'rgba(255,255,255,0.15)', zIndex: 11 }
 const slideProgressFill = { height: '100%', background: 'var(--warm)' }
 const slideshowImg = { maxWidth: '100vw', maxHeight: 'calc(100vh - 120px)', objectFit: 'contain', animation: 'fadeIn 0.6s ease' }
 const thumbStrip = { position: 'absolute', bottom: 0, left: 0, right: 0, padding: '0.75rem 1rem', display: 'flex', gap: '4px', overflowX: 'auto', background: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)', justifyContent: 'center' }
-const thumbCell = { width: '48px', height: '48px', flexShrink: 0, background: 'rgba(255,255,255,0.1)', cursor: 'pointer', borderRadius: '3px', overflow: 'hidden', transition: 'opacity 0.2s, outline 0.2s' }
+const thumbCell = { width: '44px', height: '44px', flexShrink: 0, background: 'rgba(255,255,255,0.1)', cursor: 'pointer', borderRadius: '3px', overflow: 'hidden', transition: 'opacity 0.2s, outline 0.2s' }
