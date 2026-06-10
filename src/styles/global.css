@@ -130,4 +130,10 @@ label.field-label {
 /* Utility — hide on mobile */
 @media (max-width: 640px) {
   .desktop-only { display: none !important; }
+
+  /* Client gallery — 3 columns on mobile for more photos visible */
+  .photo-grid {
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 2px !important;
+  }
 }

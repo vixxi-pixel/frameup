@@ -471,7 +471,7 @@ export default function PublicGallery() {
           No photos here yet.
         </div>
       ) : (
-        <div style={grid}>
+        <div style={grid} className="photo-grid">
           {displayPhotos.map((p, i) => (
             <div key={p.id} style={cell} onClick={() => openLightbox(p, i)}>
               <LazyPhoto photo={p} onVisible={onPhotoVisible}>
