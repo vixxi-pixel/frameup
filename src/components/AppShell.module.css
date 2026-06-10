@@ -1,31 +1,76 @@
+/* Layout */
 .layout {
   display: grid;
   grid-template-columns: 220px 1fr;
   min-height: 100vh;
+  transition: grid-template-columns 0.25s ease;
+}
+.layoutCollapsed {
+  grid-template-columns: 56px 1fr;
 }
 
+/* Sidebar */
 .sidebar {
   background: var(--surface);
   border-right: 1px solid var(--border);
   display: flex;
   flex-direction: column;
-  padding: 1.5rem 1rem;
+  padding: 1.25rem 0.75rem;
   position: sticky;
   top: 0;
   height: 100vh;
   overflow-y: auto;
+  overflow-x: hidden;
+  transition: padding 0.25s ease;
+}
+.sidebarCollapsed {
+  padding: 1.25rem 0.5rem;
+  align-items: center;
+}
+
+/* Logo row */
+.logoRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 0.5rem;
+  margin-bottom: 1.75rem;
+  min-height: 28px;
 }
 
 .logo {
   font-family: 'DM Serif Display', serif;
   font-size: 1.3rem;
   color: var(--ink);
-  padding: 0 0.75rem;
-  margin-bottom: 2rem;
   letter-spacing: -0.02em;
+  white-space: nowrap;
 }
 .logo span { color: var(--warm); }
 
+/* Collapse button */
+.collapseBtn {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--muted);
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  flex-shrink: 0;
+  line-height: 1;
+}
+.collapseBtn:hover {
+  background: var(--surface2);
+  color: var(--ink);
+  border-color: var(--border2);
+}
+
+/* Nav */
 .navLabel {
   font-size: 0.65rem;
   letter-spacing: 0.1em;
@@ -39,6 +84,7 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
+  width: 100%;
 }
 
 .navItem {
@@ -51,6 +97,8 @@
   color: var(--muted);
   transition: all 0.15s;
   border: 1px solid transparent;
+  white-space: nowrap;
+  width: 100%;
 }
 .navItem:hover { background: var(--surface3); color: var(--ink); }
 .navItem.active {
@@ -60,13 +108,21 @@
   border-color: var(--border2);
 }
 
-.navIcon { font-size: 1rem; }
+/* Collapsed nav items — icon only, centered */
+.navItemCollapsed {
+  padding: 0.5rem;
+  justify-content: center;
+  gap: 0;
+}
 
+.navIcon { font-size: 1rem; flex-shrink: 0; }
+
+/* New gallery button */
 .newBtn {
   margin-top: 1.5rem;
   padding: 0 0.25rem;
+  width: 100%;
 }
-
 .createBtn {
   display: block;
   text-align: center;
@@ -77,13 +133,37 @@
   font-size: 0.85rem;
   font-weight: 500;
   transition: opacity 0.15s;
+  white-space: nowrap;
 }
 .createBtn:hover { opacity: 0.85; }
 
+/* Collapsed new gallery — just + icon */
+.createBtnIcon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  background: var(--warm);
+  color: #0E0D0B;
+  border-radius: 50%;
+  font-size: 1.2rem;
+  font-weight: 500;
+  transition: opacity 0.15s;
+  margin: 0 auto;
+}
+.createBtnIcon:hover { opacity: 0.85; }
+
+/* Footer */
 .sidebarFooter {
   margin-top: auto;
-  padding-top: 1.5rem;
+  padding-top: 1.25rem;
   border-top: 1px solid var(--border);
+  width: 100%;
+}
+.sidebarFooterCollapsed {
+  display: flex;
+  justify-content: center;
 }
 
 .userRow {
@@ -128,15 +208,55 @@
   border-radius: 8px;
   color: var(--muted);
   font-size: 0.78rem;
-  font-family: 'DM Sans', sans-serif;
+  font-family: inherit;
   cursor: pointer;
   transition: all 0.15s;
 }
 .signOutBtn:hover { border-color: var(--muted2); color: var(--ink); }
 
+/* Main content */
 .main {
   background: var(--bg);
   padding: 2rem 2.5rem;
   overflow-y: auto;
   min-height: 100vh;
+}
+
+/* Mobile — sidebar becomes a bottom bar */
+@media (max-width: 640px) {
+  .layout, .layoutCollapsed {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr 56px;
+  }
+  .sidebar, .sidebarCollapsed {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    top: auto;
+    height: 56px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-around;
+    padding: 0 1rem;
+    border-right: none;
+    border-top: 1px solid var(--border);
+    z-index: 100;
+    overflow: visible;
+  }
+  .logoRow, .navLabel, .newBtn, .sidebarFooter { display: none; }
+  .nav { flex-direction: row; gap: 0; width: auto; }
+  .navItem {
+    flex-direction: column;
+    gap: 2px;
+    padding: 0.4rem 0.75rem;
+    font-size: 0.6rem;
+    border: none;
+    border-radius: 8px;
+  }
+  .navIcon { font-size: 1.1rem; }
+  .collapseBtn { display: none; }
+  .main {
+    padding: 1.25rem 1rem 4.5rem;
+  }
 }
