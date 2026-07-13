@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 
+const REGISTRATIONS_OPEN = false // flip to true to re-open
+
 export default function AuthPage({ mode }) {
   const { signIn, signUp } = useAuth()
   const navigate = useNavigate()
@@ -10,6 +12,25 @@ export default function AuthPage({ mode }) {
   const [form, setForm] = useState({ name: '', email: '', password: '' })
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+
+  // Show closed message for signup when registrations are off
+  if (!isLogin && !REGISTRATIONS_OPEN) {
+    return (
+      <div style={page}>
+        <div style={card}>
+          <div style={logoStyle}>frame<span style={{ color: 'var(--warm)' }}>.</span>up <span style={{ fontSize: '0.7em', opacity: 0.55, fontFamily: 'Outfit, sans-serif', fontWeight: 300 }}>by justaglimpse</span></div>
+          <h2 style={heading}>Registration closed</h2>
+          <p style={{ ...sub, marginBottom: '2rem' }}>
+            We're currently in private beta. New registrations are temporarily paused while we get things ready.
+          </p>
+          <p style={{ fontSize: '0.85rem', color: 'var(--muted)', marginBottom: '2rem' }}>
+            Already have an account?{' '}
+            <Link to="/login" style={{ color: 'var(--warm)' }}>Sign in here</Link>
+          </p>
+        </div>
+      </div>
+    )
+  }
 
   function set(field) {
     return e => setForm(f => ({ ...f, [field]: e.target.value }))
