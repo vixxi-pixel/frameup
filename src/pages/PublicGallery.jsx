@@ -342,7 +342,7 @@ export default function PublicGallery() {
     return (
       <div style={loadingPage}>
         <div style={pwCard}>
-          <div style={logoStyle}>frame<span style={{ color: 'var(--warm)' }}>.</span>up</div>
+          <div style={logoStyle}>frame<span style={{ color: 'var(--warm)' }}>.</span>up <span style={{ fontSize: '0.7em', opacity: 0.55, fontFamily: 'Outfit, sans-serif', fontWeight: 300 }}>by justaglimpse</span></div>
           <h2 style={pwTitle}>{gallery.name}</h2>
           {gallery.client_name && <p style={{ color: 'var(--muted)', fontSize: '0.875rem', marginBottom: '1.5rem' }}>{gallery.client_name}</p>}
           <p style={{ fontSize: '0.875rem', color: 'var(--muted)', marginBottom: '1rem' }}>This gallery is password protected.</p>
