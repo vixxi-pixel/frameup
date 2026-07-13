@@ -377,6 +377,7 @@ export default function PublicGallery() {
             <span style={{ fontFamily: "'DM Serif Display', serif", fontSize: '0.85rem', color: 'var(--ink)', letterSpacing: '-0.01em' }}>
               frame<span style={{ color: 'var(--warm)' }}>.</span>up
             </span>
+            <span style={{ fontSize: '0.7rem', color: 'var(--muted2)' }}>by justaglimpse</span>
           </a>
           <div>
             <h1 style={galleryTitle}>{gallery.name}</h1>
@@ -618,7 +619,7 @@ export default function PublicGallery() {
           <span style={{ fontFamily: "'DM Serif Display', serif", fontSize: '1.1rem', color: 'var(--ink)', letterSpacing: '-0.01em' }}>
             frame<span style={{ color: 'var(--warm)' }}>.</span>up
           </span>
-          <span style={{ fontSize: '0.7rem', color: 'var(--muted2)', letterSpacing: '0.04em' }}>Gallery delivery for photographers</span>
+          <span style={{ fontSize: '0.7rem', color: 'var(--muted2)', letterSpacing: '0.04em' }}>by justaglimpse</span>
         </a>
       </footer>
     </div>
