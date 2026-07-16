@@ -3,6 +3,7 @@ import { useAuth } from './hooks/useAuth'
 
 import LandingPage    from './pages/LandingPage'
 import AuthPage       from './pages/AuthPage'
+import ContactPage    from './pages/ContactPage'
 import Dashboard      from './pages/Dashboard'
 import GalleriesPage  from './pages/GalleriesPage'
 import NewGallery     from './pages/NewGallery'
@@ -35,8 +36,9 @@ export default function App() {
       <Route path="/" element={<HomeRoute />} />
 
       {/* Auth */}
-      <Route path="/login"  element={<AuthPage mode="login" />} />
-      <Route path="/signup" element={<AuthPage mode="signup" />} />
+      <Route path="/login"   element={<AuthPage mode="login" />} />
+      <Route path="/signup"  element={<AuthPage mode="signup" />} />
+      <Route path="/contact" element={<ContactPage />} />
 
       {/* Public gallery */}
       <Route path="/g/:slug"      element={<PublicGallery />} />
