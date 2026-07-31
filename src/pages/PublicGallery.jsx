@@ -18,6 +18,8 @@ export default function PublicGallery() {
   const [photos, setPhotos] = useState([])
   const [photoUrls, setPhotoUrls] = useState({})
   const [favourites, setFavourites] = useState(new Set())
+  const [hidden, setHidden] = useState(new Set())
+  const [showHidden, setShowHidden] = useState(false)
   const [password, setPassword] = useState('')
   const [unlocked, setUnlocked] = useState(false)
   const [wrongPw, setWrongPw] = useState(false)
@@ -119,9 +121,12 @@ export default function PublicGallery() {
       }
     }
 
-    const { data: favs } = await supabase
-      .from('favourites').select('photo_id').eq('gallery_id', gal.id).eq('session_token', sessionToken)
+    const [{ data: favs }, { data: hiddenData }] = await Promise.all([
+      supabase.from('favourites').select('photo_id').eq('gallery_id', gal.id).eq('session_token', sessionToken),
+      supabase.from('hidden_photos').select('photo_id').eq('gallery_id', gal.id).eq('session_token', sessionToken),
+    ])
     setFavourites(new Set(favs?.map(f => f.photo_id) ?? []))
+    setHidden(new Set(hiddenData?.map(h => h.photo_id) ?? []))
     setUnlocked(true)
   }
 
@@ -143,6 +148,41 @@ export default function PublicGallery() {
       await supabase.from('favourites').insert({ gallery_id: gallery.id, photo_id: photoId, session_token: sessionToken })
       setFavourites(prev => new Set([...prev, photoId]))
     }
+  }
+
+  async function toggleHidden(e, photoId) {
+    e.stopPropagation()
+    if (hidden.has(photoId)) {
+      await supabase.from('hidden_photos').delete().eq('photo_id', photoId).eq('session_token', sessionToken)
+      setHidden(prev => { const s = new Set(prev); s.delete(photoId); return s })
+    } else {
+      await supabase.from('hidden_photos').insert({ gallery_id: gallery.id, photo_id: photoId, session_token: sessionToken })
+      setHidden(prev => new Set([...prev, photoId]))
+    }
+  }
+
+  async function generateVisibleShareLink() {
+    // Share link for all non-hidden photos
+    const visibleIds = photos.filter(p => !hidden.has(p.id)).map(p => p.id)
+    if (!visibleIds.length) return
+    setSharing(true)
+    try {
+      const slug = Math.random().toString(36).slice(2, 9) + Math.random().toString(36).slice(2, 9)
+      const { error } = await supabase.from('share_links').insert({
+        gallery_id: gallery.id,
+        session_token: sessionToken,
+        slug,
+        share_type: 'visible',
+      })
+      if (!error) {
+        const link = `${window.location.origin}/share/${slug}`
+        setShareLink(link)
+        navigator.clipboard.writeText(link)
+        setShareCopied(true)
+        setTimeout(() => setShareCopied(false), 3000)
+      }
+    } catch (e) { console.error('Share error', e) }
+    setSharing(false)
   }
 
   function openLightbox(photo, index) {
@@ -331,7 +371,9 @@ export default function PublicGallery() {
   const sections = [...new Set(photos.map(p => p.section).filter(Boolean))]
   const hasSections = sections.length > 0
 
-  let displayPhotos = photos
+  let displayPhotos = showHidden
+    ? photos // show all including hidden when in "manage hidden" mode
+    : photos.filter(p => !hidden.has(p.id))
   if (showFavsOnly) displayPhotos = displayPhotos.filter(p => favourites.has(p.id))
   if (activeSection !== 'all') displayPhotos = displayPhotos.filter(p => p.section === activeSection)
 
@@ -405,6 +447,25 @@ export default function PublicGallery() {
               disabled={sharing}
             >
               {shareCopied ? '✓ Copied!' : sharing ? '…' : '↗ Share'}
+            </button>
+          )}
+          {hidden.size > 0 && (
+            <button
+              className="btn btn-ghost"
+              style={{ fontSize: '0.75rem', padding: '0.35rem 0.75rem', color: showHidden ? 'var(--warm)' : undefined }}
+              onClick={() => setShowHidden(v => !v)}
+            >
+              {showHidden ? `👁 Managing (${hidden.size} hidden)` : `👁 ${hidden.size} hidden`}
+            </button>
+          )}
+          {hidden.size === 0 || showHidden ? null : (
+            <button
+              className="btn btn-ghost"
+              style={{ fontSize: '0.75rem', padding: '0.35rem 0.75rem', color: shareCopied ? 'var(--green)' : undefined }}
+              onClick={generateVisibleShareLink}
+              disabled={sharing}
+            >
+              {shareCopied ? '✓ Copied!' : '↗ Share visible'}
             </button>
           )}
           {gallery.allow_downloads && (
@@ -505,6 +566,9 @@ export default function PublicGallery() {
           watermarkPosition={watermarkPosition}
           favourites={favourites}
           onToggleFavourite={toggleFavourite}
+          hidden={hidden}
+          onToggleHidden={toggleHidden}
+          showHidden={showHidden}
         />
       )}
 
@@ -627,7 +691,7 @@ export default function PublicGallery() {
 }
 
 // Custom virtual grid — no dependencies, renders only visible rows
-function VirtualPhotoGrid({ photos, photoUrls, onPhotoVisible, onOpenLightbox, gallery, watermarkSrc, watermarkOpacity, watermarkPosition, favourites, onToggleFavourite }) {
+function VirtualPhotoGrid({ photos, photoUrls, onPhotoVisible, onOpenLightbox, gallery, watermarkSrc, watermarkOpacity, watermarkPosition, favourites, onToggleFavourite, hidden, onToggleHidden, showHidden }) {
   const containerRef = useRef()
   const [containerWidth, setContainerWidth] = useState(375)
   const [scrollTop, setScrollTop] = useState(0)
@@ -690,6 +754,40 @@ function VirtualPhotoGrid({ photos, photoUrls, onPhotoVisible, onOpenLightbox, g
                     >
                       {favourites.has(p.id) ? '♥' : '♡'}
                     </button>
+                  )}
+                  {/* Hide button — bottom left */}
+                  <button
+                    style={{
+                      position: 'absolute',
+                      bottom: '6px',
+                      left: '6px',
+                      width: '26px',
+                      height: '26px',
+                      background: hidden.has(p.id) ? 'rgba(255,80,80,0.85)' : 'rgba(0,0,0,0.5)',
+                      border: 'none',
+                      borderRadius: '50%',
+                      color: '#fff',
+                      fontSize: '0.75rem',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      transition: 'background 0.15s',
+                    }}
+                    onClick={e => onToggleHidden(e, p.id)}
+                    title={hidden.has(p.id) ? 'Unhide photo' : 'Hide photo'}
+                  >
+                    {hidden.has(p.id) ? '🚫' : '🙈'}
+                  </button>
+                  {/* Dim hidden photos in manage mode */}
+                  {showHidden && hidden.has(p.id) && (
+                    <div style={{
+                      position: 'absolute', inset: 0,
+                      background: 'rgba(0,0,0,0.55)',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      color: '#fff', fontSize: '0.7rem', fontWeight: 500,
+                      pointerEvents: 'none',
+                    }}>Hidden</div>
                   )}
                 </div>
               </div>

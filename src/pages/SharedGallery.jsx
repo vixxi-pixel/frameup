@@ -68,15 +68,35 @@ export default function SharedGallery() {
       .eq('gallery_id', share.gallery_id)
       .eq('session_token', share.session_token)
 
-    if (!favs?.length) { setError('No favourites found for this share link.'); setLoading(false); return }
+    // Load hidden photos for this session
+    const { data: hiddenData } = await supabase
+      .from('hidden_photos')
+      .select('photo_id')
+      .eq('gallery_id', share.gallery_id)
+      .eq('session_token', share.session_token)
 
-    const favIds = favs.map(f => f.photo_id)
+    const hiddenIds = new Set(hiddenData?.map(h => h.photo_id) ?? [])
+    const shareType = share.share_type || 'favourites'
+
+    let photoIds
+    if (shareType === 'visible') {
+      // All photos minus hidden ones
+      const { data: allPhotos } = await supabase
+        .from('photos').select('id').eq('gallery_id', share.gallery_id)
+      photoIds = (allPhotos ?? []).map(p => p.id).filter(id => !hiddenIds.has(id))
+    } else {
+      // Just favourites (original behaviour)
+      if (!favs?.length) { setError('No favourites found for this share link.'); setLoading(false); return }
+      photoIds = favs.map(f => f.photo_id).filter(id => !hiddenIds.has(id))
+    }
+
+    if (!photoIds.length) { setError('No photos to show on this share link.'); setLoading(false); return }
 
     // Load photo records
     const { data: phs } = await supabase
       .from('photos')
       .select('*')
-      .in('id', favIds)
+      .in('id', photoIds)
       .order('sort_order')
 
     setPhotos(phs ?? [])
