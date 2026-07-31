@@ -143,6 +143,8 @@ export default function GalleryDetail() {
   }
 
   const lastSelectedIndex = useRef(null)
+  const dragPhoto = useRef(null)
+  const dragOverPhoto = useRef(null)
 
   function toggleSelectPhoto(photoId, e) {
     const currentIndex = displayPhotos.findIndex(p => p.id === photoId)
@@ -166,6 +168,60 @@ export default function GalleryDetail() {
       })
       lastSelectedIndex.current = currentIndex
     }
+  }
+
+  function onDragStart(e, photoId) {
+    dragPhoto.current = photoId
+    e.dataTransfer.effectAllowed = 'move'
+    e.currentTarget.style.opacity = '0.4'
+  }
+
+  function onDragEnd(e) {
+    e.currentTarget.style.opacity = '1'
+    dragPhoto.current = null
+    dragOverPhoto.current = null
+    // Remove all drag-over highlights
+    document.querySelectorAll('[data-drag-over]').forEach(el => {
+      el.removeAttribute('data-drag-over')
+      el.style.outline = ''
+    })
+  }
+
+  function onDragOver(e, photoId) {
+    e.preventDefault()
+    e.dataTransfer.dropEffect = 'move'
+    if (dragOverPhoto.current === photoId) return
+    dragOverPhoto.current = photoId
+    // Visual highlight
+    document.querySelectorAll('[data-drag-over]').forEach(el => {
+      el.removeAttribute('data-drag-over')
+      el.style.outline = ''
+    })
+    e.currentTarget.setAttribute('data-drag-over', 'true')
+    e.currentTarget.style.outline = '2px solid var(--warm)'
+    e.currentTarget.style.outlineOffset = '-2px'
+  }
+
+  async function onDrop(e, targetPhotoId) {
+    e.preventDefault()
+    const sourceId = dragPhoto.current
+    if (!sourceId || sourceId === targetPhotoId) return
+
+    // Reorder locally
+    const newPhotos = [...photos]
+    const sourceIdx = newPhotos.findIndex(p => p.id === sourceId)
+    const targetIdx = newPhotos.findIndex(p => p.id === targetPhotoId)
+    const [moved] = newPhotos.splice(sourceIdx, 1)
+    newPhotos.splice(targetIdx, 0, moved)
+
+    // Update sort_order on each photo
+    const updated = newPhotos.map((p, i) => ({ ...p, sort_order: i }))
+    setPhotos(updated)
+
+    // Save to Supabase in bulk
+    await Promise.all(updated.map(p =>
+      supabase.from('photos').update({ sort_order: p.sort_order }).eq('id', p.id)
+    ))
   }
 
   async function assignSectionToSelected(section) {
@@ -470,15 +526,21 @@ export default function GalleryDetail() {
               {displayPhotos.map(p => (
                 <div
                   key={p.id}
+                  draggable
+                  onDragStart={e => onDragStart(e, p.id)}
+                  onDragEnd={onDragEnd}
+                  onDragOver={e => onDragOver(e, p.id)}
+                  onDrop={e => onDrop(e, p.id)}
                   style={{
                     ...photoCell,
                     outline: selectedPhotos.has(p.id) ? '2px solid var(--warm)' : 'none',
                     outlineOffset: '-2px',
+                    cursor: 'grab',
                   }}
                   onClick={e => toggleSelectPhoto(p.id, e)}
                 >
                   {photoUrls[p.id]
-                    ? <img src={photoUrls[p.id]} alt={p.filename} style={photoImg} />
+                    ? <img src={photoUrls[p.id]} alt={p.filename} style={photoImg} draggable={false} />
                     : <div style={{ ...photoImg, background: 'var(--surface2)' }} />
                   }
                   {/* Section badge */}
@@ -489,6 +551,19 @@ export default function GalleryDetail() {
                   {selectedPhotos.has(p.id) && (
                     <div style={selectedOverlay}>✓</div>
                   )}
+                  {/* Drag handle indicator */}
+                  <div style={{
+                    position: 'absolute',
+                    top: '6px',
+                    left: '6px',
+                    background: 'rgba(0,0,0,0.5)',
+                    borderRadius: '3px',
+                    padding: '2px 4px',
+                    fontSize: '0.55rem',
+                    color: 'rgba(255,255,255,0.6)',
+                    lineHeight: 1,
+                    pointerEvents: 'none',
+                  }}>⠿</div>
                   <button
                     style={deletePhotoBtn}
                     onClick={e => { e.stopPropagation(); deletePhoto(p) }}
