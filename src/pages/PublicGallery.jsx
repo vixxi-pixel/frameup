@@ -39,6 +39,7 @@ export default function PublicGallery() {
   const [watermarkSrc, setWatermarkSrc] = useState(null)
   const [watermarkOpacity, setWatermarkOpacity] = useState(0.35)
   const [watermarkPosition, setWatermarkPosition] = useState('bottom-right')
+  const [bw, setBw] = useState(false)
   const sessionToken = getSessionToken()
 
   useEffect(() => { loadGallery() }, [slug])
@@ -433,6 +434,14 @@ export default function PublicGallery() {
               ▶
             </button>
           )}
+          <button
+            className="btn btn-ghost"
+            style={{ fontSize: '0.75rem', padding: '0.35rem 0.75rem', color: bw ? 'var(--warm)' : undefined, fontWeight: bw ? 600 : undefined }}
+            onClick={() => setBw(v => !v)}
+            title={bw ? 'Switch to colour' : 'Switch to black & white'}
+          >
+            {bw ? '◑ Colour' : '◑ B&W'}
+          </button>
           {gallery.allow_favourites && (
             <button className="btn btn-ghost" style={{ fontSize: '0.75rem', padding: '0.35rem 0.75rem' }}
               onClick={() => { setShowFavsOnly(v => !v); setActiveSection('all') }}>
@@ -569,6 +578,7 @@ export default function PublicGallery() {
           hidden={hidden}
           onToggleHidden={toggleHidden}
           showHidden={showHidden}
+          bw={bw}
         />
       )}
 
@@ -587,7 +597,7 @@ export default function PublicGallery() {
 
           {gallery.watermark_enabled && watermarkSrc ? (
             <div style={{ position: 'relative', display: 'inline-block' }} onClick={e => e.stopPropagation()}>
-              <img src={photoUrls[lightbox.id]} alt={lightbox.filename} style={lightboxImg} />
+              <img src={photoUrls[lightbox.id]} alt={lightbox.filename} style={{ ...lightboxImg, filter: bw ? 'grayscale(100%)' : 'none', transition: 'filter 0.3s' }} />
               <img
                 src={watermarkSrc}
                 alt="watermark"
@@ -653,7 +663,7 @@ export default function PublicGallery() {
               key={slideIndex}
               src={photoUrls[displayPhotos[slideIndex].id]}
               alt=""
-              style={slideshowImg}
+              style={{ ...slideshowImg, filter: bw ? 'grayscale(100%)' : 'none', transition: 'filter 0.3s' }}
             />
           ) : (
             <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.9rem' }}>Loading…</div>
@@ -691,7 +701,7 @@ export default function PublicGallery() {
 }
 
 // Custom virtual grid — no dependencies, renders only visible rows
-function VirtualPhotoGrid({ photos, photoUrls, onPhotoVisible, onOpenLightbox, gallery, watermarkSrc, watermarkOpacity, watermarkPosition, favourites, onToggleFavourite, hidden, onToggleHidden, showHidden }) {
+function VirtualPhotoGrid({ photos, photoUrls, onPhotoVisible, onOpenLightbox, gallery, watermarkSrc, watermarkOpacity, watermarkPosition, favourites, onToggleFavourite, hidden, onToggleHidden, showHidden, bw }) {
   const containerRef = useRef()
   const [containerWidth, setContainerWidth] = useState(375)
   const [scrollTop, setScrollTop] = useState(0)
@@ -741,8 +751,8 @@ function VirtualPhotoGrid({ photos, photoUrls, onPhotoVisible, onOpenLightbox, g
                   <LazyPhoto photo={p} onVisible={onPhotoVisible}>
                     {url ? (
                       gallery.watermark_enabled && watermarkSrc
-                        ? <WatermarkedPhoto src={url} logoSrc={watermarkSrc} opacity={watermarkOpacity} position={watermarkPosition} />
-                        : <img src={url} alt={p.filename} style={img} />
+                        ? <WatermarkedPhoto src={url} logoSrc={watermarkSrc} opacity={watermarkOpacity} position={watermarkPosition} bw={bw} />
+                        : <img src={url} alt={p.filename} style={{ ...img, filter: bw ? 'grayscale(100%)' : 'none', transition: 'filter 0.3s' }} />
                     ) : (
                       <div style={{ ...img, background: 'var(--surface2)' }} />
                     )}
@@ -800,11 +810,11 @@ function VirtualPhotoGrid({ photos, photoUrls, onPhotoVisible, onOpenLightbox, g
 }
 
 // CSS overlay watermark — no canvas, no CORS issues
-function WatermarkedPhoto({ src, logoSrc, opacity, position }) {
+function WatermarkedPhoto({ src, logoSrc, opacity, position, bw }) {
   const posStyle = getPositionStyle(position)
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-      <img src={src} alt="" style={img} />
+      <img src={src} alt="" style={{ ...img, filter: bw ? 'grayscale(100%)' : 'none', transition: 'filter 0.3s' }} />
       <img
         src={logoSrc}
         alt="watermark"
