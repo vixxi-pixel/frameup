@@ -291,18 +291,26 @@ export default function PublicGallery() {
     try {
       const JSZip = (await import('https://esm.sh/jszip@3.10.1')).default
       const zip = new JSZip()
-      const folder = zip.folder(gallery.name || 'gallery')
+      const folderName = bw ? `${gallery.name || 'gallery'} (B&W)` : (gallery.name || 'gallery')
+      const folder = zip.folder(folderName)
       const targets = displayPhotos
       let failed = 0
 
       for (let i = 0; i < targets.length; i++) {
         const p = targets[i]
         try {
-          // Use /api/r2-fetch proxy to avoid CORS issues with direct R2 fetches
           const res = await fetch(`/api/r2-fetch?path=${encodeURIComponent(p.storage_path)}`)
           if (!res.ok) throw new Error(`HTTP ${res.status}`)
           const blob = await res.blob()
-          folder.file(p.filename || `photo-${i + 1}.jpg`, blob)
+
+          let finalBlob = blob
+
+          // If B&W mode is on, convert via canvas
+          if (bw) {
+            finalBlob = await convertToGrayscale(blob)
+          }
+
+          folder.file(p.filename || `photo-${i + 1}.jpg`, finalBlob)
         } catch (e) {
           console.error('Failed photo', p.filename, e)
           failed++
@@ -311,10 +319,10 @@ export default function PublicGallery() {
       }
 
       const content = await zip.generateAsync({ type: 'blob' })
-      triggerDownload(content, `${gallery.name || 'gallery'}.zip`)
+      triggerDownload(content, `${folderName}.zip`)
 
       if (failed > 0) {
-        alert(`${targets.length - failed} photos downloaded. ${failed} photos could not be included.`)
+        alert(`${targets.length - failed} photos downloaded. ${failed} could not be included.`)
       }
 
     } catch (err) {
@@ -324,6 +332,33 @@ export default function PublicGallery() {
 
     setZipping(false)
     setZipProgress(0)
+  }
+
+  // Convert an image blob to grayscale using canvas
+  function convertToGrayscale(blob) {
+    return new Promise((resolve, reject) => {
+      const img = new Image()
+      const url = URL.createObjectURL(blob)
+      img.onload = () => {
+        const canvas = document.createElement('canvas')
+        canvas.width = img.naturalWidth
+        canvas.height = img.naturalHeight
+        const ctx = canvas.getContext('2d')
+        ctx.drawImage(img, 0, 0)
+        // Apply grayscale by averaging RGB channels
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+        const data = imageData.data
+        for (let i = 0; i < data.length; i += 4) {
+          const avg = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]
+          data[i] = avg; data[i + 1] = avg; data[i + 2] = avg
+        }
+        ctx.putImageData(imageData, 0, 0)
+        URL.revokeObjectURL(url)
+        canvas.toBlob(b => b ? resolve(b) : reject(new Error('Canvas toBlob failed')), 'image/jpeg', 0.95)
+      }
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Image load failed')) }
+      img.src = url
+    })
   }
 
   function triggerDownload(blob, filename) {
@@ -479,7 +514,7 @@ export default function PublicGallery() {
           )}
           {gallery.allow_downloads && (
             <button className="btn btn-gold" style={{ fontSize: '0.75rem', padding: '0.35rem 0.75rem' }} onClick={downloadAll} disabled={zipping}>
-              {zipping ? `${zipProgress}%` : '↓ Download'}
+              {zipping ? `${zipProgress}%` : bw ? '↓ Download B&W' : '↓ Download'}
             </button>
           )}
         </div>
