@@ -648,7 +648,7 @@ export default function PublicGallery() {
               />
             </div>
           ) : (
-            <img src={photoUrls[lightbox.id]} alt={lightbox.filename} style={lightboxImg} onClick={e => e.stopPropagation()} />
+            <img src={photoUrls[lightbox.id]} alt={lightbox.filename} style={{ ...lightboxImg, filter: bw ? 'grayscale(100%)' : 'none', transition: 'filter 0.3s' }} onClick={e => e.stopPropagation()} />
           )}
 
           <div style={lightboxFooter} onClick={e => e.stopPropagation()}>
