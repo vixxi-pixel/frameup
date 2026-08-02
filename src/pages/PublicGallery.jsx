@@ -655,11 +655,32 @@ export default function PublicGallery() {
             {lightbox.section && <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)' }}>{lightbox.section}</span>}
             <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)' }}>{lightboxIndex + 1} / {displayPhotos.length}</span>
             {gallery.allow_downloads && (
-              <a href={photoUrls[lightbox.id]} download={lightbox.filename}
-                className="btn btn-gold" style={{ fontSize: '0.8rem' }}
-                onClick={e => e.stopPropagation()}>
-                ↓ Download
-              </a>
+              <button
+                className="btn btn-gold"
+                style={{ fontSize: '0.8rem' }}
+                onClick={async e => {
+                  e.stopPropagation()
+                  if (!bw) {
+                    // Colour — direct download
+                    const a = document.createElement('a')
+                    a.href = photoUrls[lightbox.id]
+                    a.download = lightbox.filename || 'photo.jpg'
+                    a.click()
+                  } else {
+                    // B&W — convert via canvas first
+                    try {
+                      const res = await fetch(`/api/r2-fetch?path=${encodeURIComponent(lightbox.storage_path)}`)
+                      const blob = await res.blob()
+                      const bwBlob = await convertToGrayscale(blob)
+                      triggerDownload(bwBlob, lightbox.filename || 'photo.jpg')
+                    } catch (err) {
+                      console.error('B&W download failed', err)
+                    }
+                  }
+                }}
+              >
+                {bw ? '↓ Download B&W' : '↓ Download'}
+              </button>
             )}
           </div>
         </div>
