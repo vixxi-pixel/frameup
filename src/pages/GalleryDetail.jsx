@@ -498,6 +498,22 @@ export default function GalleryDetail() {
               >
                 {selectedPhotos.size === displayPhotos.length ? 'Deselect all' : 'Select all'}
               </button>
+              <button
+                className="btn btn-ghost"
+                onClick={() => setSelectedPhotos(new Set(displayPhotos.filter((_, i) => i % 2 === 0).map(p => p.id)))}
+                style={{ fontSize: '0.75rem', padding: '0.3rem 0.65rem' }}
+                title="Select photos 1, 3, 5, 7… (odd positions)"
+              >
+                Select odd
+              </button>
+              <button
+                className="btn btn-ghost"
+                onClick={() => setSelectedPhotos(new Set(displayPhotos.filter((_, i) => i % 2 === 1).map(p => p.id)))}
+                style={{ fontSize: '0.75rem', padding: '0.3rem 0.65rem' }}
+                title="Select photos 2, 4, 6, 8… (even positions)"
+              >
+                Select even
+              </button>
             </div>
           </div>
 
@@ -513,7 +529,7 @@ export default function GalleryDetail() {
               top: '57px', // sits just below the sticky toolbar
               zIndex: 9,
             }}>
-              Click to select · <strong>Shift+click</strong> to select a range · Select all with the button above
+              Click to select · <strong>Shift+click</strong> to select a range · <strong>Select odd/even</strong> for alternating photos
             </div>
           )}
 
