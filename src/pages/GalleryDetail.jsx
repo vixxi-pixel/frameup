@@ -710,7 +710,7 @@ const deletePhotoBtn = {
 }
 
 function ViewHistory({ viewHistory, views }) {
-  const [collapsed, setCollapsed] = useState(false)
+  const [collapsed, setCollapsed] = useState(true)
   const uniqueViewers = [...new Set(viewHistory.map(h => h.viewer_token))]
 
   return (
