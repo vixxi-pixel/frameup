@@ -49,7 +49,19 @@ export default function PublicGallery() {
       .from('galleries').select('*').eq('slug', slug).eq('is_active', true).single()
     if (!gal) { setLoading(false); return }
     setGallery(gal)
-    await supabase.from('gallery_views').insert({ gallery_id: gal.id })
+
+    // Record view — deduplicated per session token per day
+    const today = new Date().toISOString().slice(0, 10)
+    const viewKey = `viewed_${gal.id}_${today}`
+    if (!sessionStorage.getItem(viewKey)) {
+      await supabase.from('gallery_views').insert({
+        gallery_id: gal.id,
+        viewer_token: sessionToken,
+        viewed_at: new Date().toISOString(),
+        is_photographer: false,
+      })
+      sessionStorage.setItem(viewKey, '1')
+    }
     if (!gal.password_hash) await loadPhotos(gal)
 
     // Load watermark if enabled
@@ -439,25 +451,26 @@ export default function PublicGallery() {
     <div style={{ minHeight: '100vh', background: 'var(--bg)', overflowX: 'hidden', maxWidth: '100vw' }}>
       {/* Header */}
       <header style={header}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', minWidth: 0, flex: '1 1 auto' }}>
           {/* frame.up logo badge */}
           <a href="/" style={{
-            display: 'flex',
+            display: 'inline-flex',
             alignItems: 'center',
             gap: '0.3rem',
             background: 'var(--warm-bg)',
             border: '1px solid var(--border2)',
             borderRadius: '6px',
-            padding: '0.3rem 0.6rem',
+            padding: '0.2rem 0.5rem',
             textDecoration: 'none',
+            alignSelf: 'flex-start',
             flexShrink: 0,
           }}>
-            <span style={{ fontFamily: "'DM Serif Display', serif", fontSize: '0.85rem', color: 'var(--ink)', letterSpacing: '-0.01em' }}>
+            <span style={{ fontFamily: "'DM Serif Display', serif", fontSize: '0.8rem', color: 'var(--ink)', letterSpacing: '-0.01em' }}>
               frame<span style={{ color: 'var(--warm)' }}>.</span>up
             </span>
-            <span style={{ fontSize: '0.7rem', color: 'var(--muted2)' }}>by justaglimpse</span>
+            <span style={{ fontSize: '0.65rem', color: 'var(--muted2)' }}>by justaglimpse</span>
           </a>
-          <div>
+          <div style={{ minWidth: 0 }}>
             <h1 style={galleryTitle}>{gallery.name}</h1>
             {gallery.client_name && <p style={galleryClient}>{gallery.client_name}</p>}
           </div>
@@ -928,9 +941,9 @@ function getPositionStyle(position) {
 }
 
 const loadingPage = { minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '1rem', background: 'var(--bg)' }
-const header = { padding: '0.85rem 1rem', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', background: 'var(--surface)', flexWrap: 'wrap', gap: '0.75rem' }
-const galleryTitle = { fontFamily: "'DM Serif Display', serif", fontSize: '1.1rem', color: 'var(--ink)' }
-const galleryClient = { fontSize: '0.78rem', color: 'var(--muted)', marginTop: '0.15rem' }
+const header = { padding: '0.75rem 1rem', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', background: 'var(--surface)', flexWrap: 'wrap', gap: '0.5rem' }
+const galleryTitle = { fontFamily: "'DM Serif Display', serif", fontSize: 'clamp(0.95rem, 4vw, 1.2rem)', color: 'var(--ink)', whiteSpace: 'normal', wordBreak: 'break-word', maxWidth: '100%' }
+const galleryClient = { fontSize: '0.75rem', color: 'var(--muted)', marginTop: '0.15rem' }
 const sectionBar = { display: 'flex', gap: '0', overflowX: 'auto', borderBottom: '1px solid var(--border)', background: 'var(--surface)', padding: '0 0.75rem', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', msOverflowStyle: 'none' }
 const sectionTab = { padding: '0.6rem 0.9rem', fontSize: '0.8rem', color: 'var(--muted)', background: 'transparent', border: 'none', borderBottom: '2px solid transparent', marginBottom: '-1px', cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap', transition: 'all 0.15s', flexShrink: 0 }
 const sectionTabActive = { color: 'var(--warm)', borderBottomColor: 'var(--warm)', fontWeight: 500 }

@@ -14,6 +14,7 @@ export default function GalleryDetail() {
   const [gallery, setGallery] = useState(null)
   const [photos, setPhotos] = useState([])
   const [views, setViews] = useState(0)
+  const [viewHistory, setViewHistory] = useState([])
   const [loading, setLoading] = useState(true)
   const [copied, setCopied] = useState(false)
   const [photoUrls, setPhotoUrls] = useState({})
@@ -30,12 +31,14 @@ export default function GalleryDetail() {
   useEffect(() => { loadGallery() }, [id])
 
   async function loadGallery() {
-    const [{ data: gal }, { count }] = await Promise.all([
+    const [{ data: gal }, { count }, { data: viewData }] = await Promise.all([
       supabase.from('galleries').select('*').eq('id', id).eq('photographer_id', user.id).single(),
-      supabase.from('gallery_views').select('*', { count: 'exact', head: true }).eq('gallery_id', id),
+      supabase.from('gallery_views').select('*', { count: 'exact', head: true }).eq('gallery_id', id).eq('is_photographer', false),
+      supabase.from('gallery_views').select('viewed_at, viewer_token').eq('gallery_id', id).eq('is_photographer', false).order('viewed_at', { ascending: false }).limit(50),
     ])
     setGallery(gal)
     setViews(count ?? 0)
+    setViewHistory(viewData ?? [])
 
     // Fetch ALL photos in pages of 1000 (Supabase default limit)
     let allPhotos = []
@@ -297,7 +300,7 @@ export default function GalleryDetail() {
         <div style={statsRow}>
           {[
             { label: 'Photos',  value: photos.length },
-            { label: 'Views',   value: views },
+            { label: 'Client views', value: views },
             { label: 'Sections', value: allSections.length || '—' },
             { label: 'Expires', value: gallery.expires_at ? new Date(gallery.expires_at).toLocaleDateString() : 'Never' },
           ].map(s => (
@@ -307,6 +310,51 @@ export default function GalleryDetail() {
             </div>
           ))}
         </div>
+
+        {/* View history */}
+        {viewHistory.length > 0 && (
+          <div className="card" style={{ padding: '1.25rem', marginBottom: '1.5rem' }}>
+            <div style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--ink)', marginBottom: '1rem' }}>
+              👁 View history
+              <span style={{ fontSize: '0.75rem', color: 'var(--muted)', fontWeight: 400, marginLeft: '0.5rem' }}>
+                {views} total client view{views !== 1 ? 's' : ''}
+              </span>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+              {viewHistory.map((v, i) => {
+                const date = new Date(v.viewed_at)
+                const isToday = date.toDateString() === new Date().toDateString()
+                const isYesterday = date.toDateString() === new Date(Date.now() - 86400000).toDateString()
+                const dayLabel = isToday ? 'Today' : isYesterday ? 'Yesterday' : date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                const timeLabel = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+                // Group badge — show unique viewer number
+                const viewerNum = [...new Set(viewHistory.map(h => h.viewer_token))].indexOf(v.viewer_token) + 1
+                return (
+                  <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.4rem 0', borderBottom: i < viewHistory.length - 1 ? '1px solid var(--border)' : 'none' }}>
+                    <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--warm-bg)', border: '1px solid var(--border2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.7rem', color: 'var(--warm)', fontWeight: 500, flexShrink: 0 }}>
+                      {viewerNum}
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: '0.82rem', color: 'var(--ink)' }}>
+                        Viewer {viewerNum}
+                        {isToday && <span style={{ marginLeft: '0.5rem', fontSize: '0.7rem', background: 'var(--warm-bg)', color: 'var(--warm)', padding: '1px 6px', borderRadius: '100px' }}>Today</span>}
+                      </div>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--muted)' }}>{dayLabel} at {timeLabel}</div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {views === 0 && (
+          <div className="card" style={{ padding: '1.25rem', marginBottom: '1.5rem', textAlign: 'center' }}>
+            <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>👁</div>
+            <div style={{ fontSize: '0.85rem', color: 'var(--muted)' }}>No client views yet</div>
+            <div style={{ fontSize: '0.75rem', color: 'var(--muted2)', marginTop: '0.25rem' }}>Share the client link to get started</div>
+          </div>
+        )}
 
         {/* Client link */}
         <div className="card" style={{ padding: '1rem 1.25rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
