@@ -802,6 +802,35 @@ export default function PublicGallery() {
         </div>
       )}
 
+      {/* Return to top button */}
+      {scrollTop > 600 && (
+        <button
+          onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+          style={{
+            position: 'fixed',
+            bottom: '2rem',
+            right: '1.5rem',
+            width: '40px',
+            height: '40px',
+            borderRadius: '50%',
+            background: 'var(--surface)',
+            border: '1px solid var(--border2)',
+            color: 'var(--ink)',
+            fontSize: '1rem',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 2px 12px rgba(0,0,0,0.15)',
+            zIndex: 50,
+            transition: 'opacity 0.2s',
+          }}
+          title="Back to top"
+        >
+          ↑
+        </button>
+      )}
+
       <footer style={footerStyle}>
         <a href="/" style={{ textDecoration: 'none', display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: '0.25rem' }}>
           <span style={{ fontFamily: "'DM Serif Display', serif", fontSize: '1.1rem', color: 'var(--ink)', letterSpacing: '-0.01em' }}>
