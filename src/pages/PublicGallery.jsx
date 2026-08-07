@@ -40,7 +40,14 @@ export default function PublicGallery() {
   const [watermarkOpacity, setWatermarkOpacity] = useState(0.35)
   const [watermarkPosition, setWatermarkPosition] = useState('bottom-right')
   const [bw, setBw] = useState(false)
+  const [scrollTop, setScrollTop] = useState(0)
   const sessionToken = getSessionToken()
+
+  useEffect(() => {
+    const onScroll = () => setScrollTop(window.scrollY)
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
 
   useEffect(() => { loadGallery() }, [slug])
 
@@ -627,6 +634,7 @@ export default function PublicGallery() {
           onToggleHidden={toggleHidden}
           showHidden={showHidden}
           bw={bw}
+          scrollTop={scrollTop}
         />
       )}
 
@@ -844,10 +852,9 @@ export default function PublicGallery() {
 }
 
 // Custom virtual grid — no dependencies, renders only visible rows
-function VirtualPhotoGrid({ photos, photoUrls, onPhotoVisible, onOpenLightbox, gallery, watermarkSrc, watermarkOpacity, watermarkPosition, favourites, onToggleFavourite, hidden, onToggleHidden, showHidden, bw }) {
+function VirtualPhotoGrid({ photos, photoUrls, onPhotoVisible, onOpenLightbox, gallery, watermarkSrc, watermarkOpacity, watermarkPosition, favourites, onToggleFavourite, hidden, onToggleHidden, showHidden, bw, scrollTop }) {
   const containerRef = useRef()
   const [containerWidth, setContainerWidth] = useState(375)
-  const [scrollTop, setScrollTop] = useState(0)
 
   useEffect(() => {
     const el = containerRef.current
@@ -856,12 +863,6 @@ function VirtualPhotoGrid({ photos, photoUrls, onPhotoVisible, onOpenLightbox, g
     const ro = new ResizeObserver(([e]) => setContainerWidth(e.contentRect.width))
     ro.observe(el)
     return () => ro.disconnect()
-  }, [])
-
-  useEffect(() => {
-    const onScroll = () => setScrollTop(window.scrollY)
-    window.addEventListener('scroll', onScroll, { passive: true })
-    return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
   const COLS = containerWidth < 480 ? 3 : containerWidth < 768 ? 4 : containerWidth < 1200 ? 5 : 6
