@@ -816,8 +816,8 @@ export default function PublicGallery() {
           onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
           style={{
             position: 'fixed',
-            bottom: '2rem',
-            right: '1.5rem',
+            bottom: 'calc(env(safe-area-inset-bottom, 0px) + 5rem)',
+            right: '1.25rem',
             width: '40px',
             height: '40px',
             borderRadius: '50%',
@@ -831,7 +831,6 @@ export default function PublicGallery() {
             justifyContent: 'center',
             boxShadow: '0 2px 12px rgba(0,0,0,0.15)',
             zIndex: 50,
-            transition: 'opacity 0.2s',
           }}
           title="Back to top"
         >
