@@ -717,7 +717,52 @@ export default function PublicGallery() {
                 {slidePlaying ? '⏸' : '▶'}
               </button>
               <button style={slideBtn} onClick={() => setSlideIndex(i => Math.min(displayPhotos.length - 1, i + 1))}>›</button>
-              <button style={{ ...slideBtn, marginLeft: '0.5rem', fontSize: '1rem' }} onClick={() => setSlideshow(false)}>✕</button>
+
+              {/* Divider */}
+              <div style={{ width: 1, height: 20, background: 'rgba(255,255,255,0.15)', margin: '0 0.25rem' }} />
+
+              {/* Favourite */}
+              {gallery.allow_favourites && displayPhotos[slideIndex] && (
+                <button
+                  style={{
+                    ...slideBtn,
+                    color: favourites.has(displayPhotos[slideIndex].id) ? 'var(--warm)' : '#fff',
+                    background: favourites.has(displayPhotos[slideIndex].id) ? 'rgba(200,169,110,0.2)' : 'rgba(255,255,255,0.1)',
+                  }}
+                  onClick={() => toggleFavourite({ stopPropagation: () => {} }, displayPhotos[slideIndex].id)}
+                  title="Favourite"
+                >
+                  {favourites.has(displayPhotos[slideIndex].id) ? '♥' : '♡'}
+                </button>
+              )}
+
+              {/* Download */}
+              {gallery.allow_downloads && displayPhotos[slideIndex] && (
+                <button
+                  style={slideBtn}
+                  title={bw ? 'Download B&W' : 'Download'}
+                  onClick={async () => {
+                    const p = displayPhotos[slideIndex]
+                    if (!bw) {
+                      const a = document.createElement('a')
+                      a.href = photoUrls[p.id]
+                      a.download = p.filename || 'photo.jpg'
+                      a.click()
+                    } else {
+                      try {
+                        const res = await fetch(`/api/r2-fetch?path=${encodeURIComponent(p.storage_path)}`)
+                        const blob = await res.blob()
+                        const bwBlob = await convertToGrayscale(blob)
+                        triggerDownload(bwBlob, p.filename || 'photo.jpg')
+                      } catch (err) { console.error('B&W download failed', err) }
+                    }
+                  }}
+                >
+                  ↓
+                </button>
+              )}
+
+              <button style={{ ...slideBtn, marginLeft: '0.25rem', fontSize: '1rem' }} onClick={() => setSlideshow(false)}>✕</button>
             </div>
           </div>
 
