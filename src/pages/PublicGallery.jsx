@@ -457,26 +457,24 @@ export default function PublicGallery() {
   return (
     <div style={{ minHeight: '100vh', background: 'var(--bg)', overflowX: 'hidden', maxWidth: '100vw' }}>
       {/* Header */}
-      <header style={header}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', minWidth: 0, flex: '1 1 auto' }}>
-          {/* frame.up logo badge */}
-          <a href="https://justaglimpse.ca" style={{
-            display: 'flex',
-            alignItems: 'center',
-            flexShrink: 0,
-            alignSelf: 'flex-start',
-          }}>
-            <img
-              src="/justaglimpse-logo.png"
-              alt="justaglimpse"
-              style={{ height: '28px', width: 'auto', display: 'block' }}
-            />
-          </a>
-          <div style={{ minWidth: 0 }}>
-            <h1 style={galleryTitle}>{gallery.name}</h1>
-            {gallery.client_name && <p style={galleryClient}>{gallery.client_name}</p>}
-          </div>
+      <header style={{ ...header, position: 'relative' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', minWidth: 0, flex: '1 1 auto' }}>
+          <h1 style={galleryTitle}>{gallery.name}</h1>
+          {gallery.client_name && <p style={galleryClient}>{gallery.client_name}</p>}
         </div>
+
+        {/* Centered logo */}
+        <a href="https://justaglimpse.ca" style={{
+          position: 'absolute',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          textDecoration: 'none',
+          display: 'flex',
+          alignItems: 'center',
+          pointerEvents: 'all',
+        }}>
+          <img src="/justaglimpse-logo.png" alt="justaglimpse" style={{ height: '26px', width: 'auto' }} />
+        </a>
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
           <span style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>{displayPhotos.length} photos</span>
           {displayPhotos.length > 0 && (
