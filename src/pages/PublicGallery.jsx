@@ -460,22 +460,17 @@ export default function PublicGallery() {
       <header style={header}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', minWidth: 0, flex: '1 1 auto' }}>
           {/* frame.up logo badge */}
-          <a href="/" style={{
-            display: 'inline-flex',
+          <a href="https://justaglimpse.ca" style={{
+            display: 'flex',
             alignItems: 'center',
-            gap: '0.3rem',
-            background: 'var(--warm-bg)',
-            border: '1px solid var(--border2)',
-            borderRadius: '6px',
-            padding: '0.2rem 0.5rem',
-            textDecoration: 'none',
-            alignSelf: 'flex-start',
             flexShrink: 0,
+            alignSelf: 'flex-start',
           }}>
-            <span style={{ fontFamily: "'DM Serif Display', serif", fontSize: '0.8rem', color: 'var(--ink)', letterSpacing: '-0.01em' }}>
-              frame<span style={{ color: 'var(--warm)' }}>.</span>up
-            </span>
-            <span style={{ fontSize: '0.65rem', color: 'var(--muted2)' }}>by justaglimpse</span>
+            <img
+              src="/justaglimpse-logo.png"
+              alt="justaglimpse"
+              style={{ height: '28px', width: 'auto', display: 'block' }}
+            />
           </a>
           <div style={{ minWidth: 0 }}>
             <h1 style={galleryTitle}>{gallery.name}</h1>
@@ -839,11 +834,9 @@ export default function PublicGallery() {
       )}
 
       <footer style={footerStyle}>
-        <a href="/" style={{ textDecoration: 'none', display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: '0.25rem' }}>
-          <span style={{ fontFamily: "'DM Serif Display', serif", fontSize: '1.1rem', color: 'var(--ink)', letterSpacing: '-0.01em' }}>
-            frame<span style={{ color: 'var(--warm)' }}>.</span>up
-          </span>
-          <span style={{ fontSize: '0.7rem', color: 'var(--muted2)', letterSpacing: '0.04em' }}>by justaglimpse</span>
+        <a href="https://justaglimpse.ca" style={{ textDecoration: 'none', display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem' }}>
+          <img src="/justaglimpse-logo.png" alt="justaglimpse" style={{ height: '24px', width: 'auto', opacity: 0.7 }} />
+          <span style={{ fontSize: '0.7rem', color: 'var(--muted2)', letterSpacing: '0.04em' }}>Gallery delivery for photographers</span>
         </a>
       </footer>
     </div>
