@@ -24,6 +24,9 @@ export default function GalleryDetail() {
   const [customSections, setCustomSections] = useState([])
   const [selectedPhotos, setSelectedPhotos] = useState(new Set())
   const [showUpload, setShowUpload] = useState(false)
+  const [newPassword, setNewPassword] = useState('')
+  const [savingPassword, setSavingPassword] = useState(false)
+  const [passwordSaved, setPasswordSaved] = useState(false)
   const [uploadFiles, setUploadFiles] = useState([])
   const [uploading, setUploading] = useState(false)
   const [uploadProgress, setUploadProgress] = useState({ done: 0, total: 0 })
@@ -88,6 +91,25 @@ export default function GalleryDetail() {
 
   async function toggleActive() {
     const { data } = await supabase.from('galleries').update({ is_active: !gallery.is_active }).eq('id', id).select().single()
+    setGallery(data)
+  }
+
+  async function savePassword() {
+    if (!newPassword.trim()) return
+    setSavingPassword(true)
+    const { data } = await supabase
+      .from('galleries').update({ password_hash: newPassword.trim() }).eq('id', id).select().single()
+    setGallery(data)
+    setNewPassword('')
+    setPasswordSaved(true)
+    setSavingPassword(false)
+    setTimeout(() => setPasswordSaved(false), 2000)
+  }
+
+  async function removePassword() {
+    if (!window.confirm('Remove password? Anyone with the link will be able to view this gallery.')) return
+    const { data } = await supabase
+      .from('galleries').update({ password_hash: null }).eq('id', id).select().single()
     setGallery(data)
   }
 
@@ -346,6 +368,43 @@ export default function GalleryDetail() {
           <button className="btn btn-ghost" onClick={copyLink} style={{ fontSize: '0.78rem', flexShrink: 0, padding: '0.3rem 0.75rem' }}>
             {copied ? '✓' : 'Copy'}
           </button>
+        </div>
+
+        {/* Password */}
+        <div className="card" style={{ padding: '1rem 1.25rem', marginBottom: '1.5rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: gallery.password_hash ? '0.75rem' : 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+              <span style={{ fontSize: '0.8rem', color: 'var(--muted)', flexShrink: 0 }}>🔒 Password</span>
+              {gallery.password_hash
+                ? <span style={{ fontSize: '0.75rem', background: 'var(--warm-bg)', color: 'var(--warm)', border: '1px solid var(--border2)', padding: '1px 8px', borderRadius: '100px' }}>Protected</span>
+                : <span style={{ fontSize: '0.75rem', color: 'var(--muted2)' }}>No password set</span>
+              }
+            </div>
+            {gallery.password_hash && (
+              <button className="btn btn-ghost" onClick={removePassword} style={{ fontSize: '0.72rem', padding: '0.2rem 0.6rem', color: 'var(--red)' }}>
+                Remove
+              </button>
+            )}
+          </div>
+          <div style={{ display: 'flex', gap: '0.5rem', marginTop: gallery.password_hash ? '0' : '0' }}>
+            <input
+              type="text"
+              className="input"
+              placeholder={gallery.password_hash ? 'Set a new password…' : 'Add a password…'}
+              value={newPassword}
+              onChange={e => setNewPassword(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && savePassword()}
+              style={{ flex: 1, fontSize: '0.85rem', padding: '0.45rem 0.75rem' }}
+            />
+            <button
+              className="btn btn-gold"
+              onClick={savePassword}
+              disabled={!newPassword.trim() || savingPassword}
+              style={{ fontSize: '0.8rem', padding: '0.45rem 1rem', flexShrink: 0 }}
+            >
+              {passwordSaved ? '✓ Saved' : savingPassword ? '…' : 'Save'}
+            </button>
+          </div>
         </div>
 
         {/* Upload more photos */}
