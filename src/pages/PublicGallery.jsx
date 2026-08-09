@@ -466,14 +466,14 @@ export default function PublicGallery() {
         {/* Centered logo */}
         <a href="https://justaglimpse.ca" style={{
           position: 'absolute',
-          left: '50%',
+          left: '45%',
           transform: 'translateX(-50%)',
           textDecoration: 'none',
           display: 'flex',
           alignItems: 'center',
           pointerEvents: 'all',
         }}>
-          <img src="/justaglimpse-logo.png" alt="justaglimpse" style={{ height: '54px', width: 'auto' }} />
+          <img src="/justaglimpse-logo.png" alt="justaglimpse" style={{ height: '62px', width: 'auto' }} />
         </a>
         <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
           <span style={{ fontSize: '0.75rem', color: 'var(--muted)' }}>{displayPhotos.length} photos</span>
