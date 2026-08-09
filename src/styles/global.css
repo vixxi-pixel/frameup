@@ -137,3 +137,8 @@ label.field-label {
     gap: 2px !important;
   }
 }
+
+/* Show move-to-top button on photo cell hover */
+div:hover > .move-top-btn {
+  opacity: 1 !important;
+}

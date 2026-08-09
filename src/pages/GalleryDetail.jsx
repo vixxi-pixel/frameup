@@ -227,7 +227,18 @@ export default function GalleryDetail() {
     ))
   }
 
-  async function assignSectionToSelected(section) {
+  async function moveToTop(photoId) {
+    const newPhotos = [...photos]
+    const idx = newPhotos.findIndex(p => p.id === photoId)
+    if (idx <= 0) return
+    const [moved] = newPhotos.splice(idx, 1)
+    newPhotos.unshift(moved)
+    const updated = newPhotos.map((p, i) => ({ ...p, sort_order: i }))
+    setPhotos(updated)
+    await Promise.all(updated.map(p =>
+      supabase.from('photos').update({ sort_order: p.sort_order }).eq('id', p.id)
+    ))
+  }
     if (selectedPhotos.size === 0) return
     const ids = [...selectedPhotos]
     await supabase.from('photos').update({ section }).in('id', ids)
@@ -596,6 +607,30 @@ export default function GalleryDetail() {
                     lineHeight: 1,
                     pointerEvents: 'none',
                   }}>⠿</div>
+                  {/* Move to top button */}
+                  <button
+                    style={{
+                      position: 'absolute',
+                      bottom: '4px',
+                      left: '4px',
+                      width: '22px',
+                      height: '22px',
+                      background: 'rgba(0,0,0,0.6)',
+                      color: '#fff',
+                      border: 'none',
+                      borderRadius: '4px',
+                      fontSize: '0.6rem',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      opacity: 0,
+                      transition: 'opacity 0.15s',
+                    }}
+                    className="move-top-btn"
+                    onClick={e => { e.stopPropagation(); moveToTop(p.id) }}
+                    title="Move to top"
+                  >⇈</button>
                   <button
                     style={deletePhotoBtn}
                     onClick={e => { e.stopPropagation(); deletePhoto(p) }}
