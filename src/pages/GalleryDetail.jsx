@@ -239,6 +239,8 @@ export default function GalleryDetail() {
       supabase.from('photos').update({ sort_order: p.sort_order }).eq('id', p.id)
     ))
   }
+
+  async function assignSectionToSelected(section) {
     if (selectedPhotos.size === 0) return
     const ids = [...selectedPhotos]
     await supabase.from('photos').update({ section }).in('id', ids)
@@ -624,10 +626,7 @@ export default function GalleryDetail() {
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      opacity: 0,
-                      transition: 'opacity 0.15s',
                     }}
-                    className="move-top-btn"
                     onClick={e => { e.stopPropagation(); moveToTop(p.id) }}
                     title="Move to top"
                   >⇈</button>
