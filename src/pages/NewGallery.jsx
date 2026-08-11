@@ -74,24 +74,32 @@ export default function NewGallery() {
     // 2. Upload photos to R2
     if (files.length > 0) {
       setProgress({ done: 0, total: files.length })
-      for (let i = 0; i < files.length; i++) {
-        const file = files[i]
-        const path = `${user.id}/${gallery.id}/${Date.now()}-${file.name}`
+      let done = 0
+      const BATCH = 5
 
-        try {
-          await uploadToR2(file, path)
-          await supabase.from('photos').insert({
-            gallery_id: gallery.id,
-            storage_path: path,
-            filename: file.name,
-            size_bytes: file.size,
-            sort_order: i,
-          })
-        } catch (err) {
-          console.error('Upload error:', err)
-        }
-
-        setProgress({ done: i + 1, total: files.length })
+      for (let i = 0; i < files.length; i += BATCH) {
+        const batch = files.slice(i, i + BATCH)
+        await Promise.allSettled(batch.map(async (file, batchIdx) => {
+          const path = `${user.id}/${gallery.id}/${Date.now()}-${batchIdx}-${file.name}`
+          for (let attempt = 0; attempt < 3; attempt++) {
+            try {
+              await uploadToR2(file, path)
+              await supabase.from('photos').insert({
+                gallery_id: gallery.id,
+                storage_path: path,
+                filename: file.name,
+                size_bytes: file.size,
+                sort_order: i + batchIdx,
+              })
+              return
+            } catch (err) {
+              if (attempt === 2) console.error('Upload failed:', file.name, err)
+              await new Promise(r => setTimeout(r, 500 * (attempt + 1)))
+            }
+          }
+        }))
+        done += batch.length
+        setProgress({ done, total: files.length })
       }
     }
 

@@ -133,38 +133,72 @@ export default function GalleryDetail() {
   async function uploadMorePhotos() {
     if (!uploadFiles.length) return
     setUploading(true)
-    setUploadProgress({ done: 0, total: uploadFiles.length })
+    const total = uploadFiles.length
+    setUploadProgress({ done: 0, total })
+    let done = 0
+    let failed = 0
     const newPhotos = []
-    for (let i = 0; i < uploadFiles.length; i++) {
-      const file = uploadFiles[i]
-      const path = `${user.id}/${gallery.id}/${Date.now()}-${file.name}`
-      try {
-        await uploadToR2(file, path)
-        const { data: photo } = await supabase.from('photos').insert({
-          gallery_id: gallery.id,
-          storage_path: path,
-          filename: file.name,
-          size_bytes: file.size,
-          sort_order: photos.length + i,
-        }).select().single()
-        if (photo) {
-          const url = await getR2SignedUrl(path, 3600)
-          newPhotos.push({ photo, url })
+    const BATCH = 5 // upload 5 at a time
+
+    for (let i = 0; i < uploadFiles.length; i += BATCH) {
+      const batch = uploadFiles.slice(i, i + BATCH)
+      const results = await Promise.allSettled(batch.map(async (file, batchIdx) => {
+        const path = `${user.id}/${gallery.id}/${Date.now()}-${batchIdx}-${file.name}`
+        // Retry up to 3 times
+        let lastErr
+        for (let attempt = 0; attempt < 3; attempt++) {
+          try {
+            await uploadToR2(file, path)
+            const { data: photo } = await supabase.from('photos').insert({
+              gallery_id: gallery.id,
+              storage_path: path,
+              filename: file.name,
+              size_bytes: file.size,
+              sort_order: photos.length + i + batchIdx,
+            }).select().single()
+            if (photo) {
+              const url = await getR2SignedUrl(path, 3600)
+              return { photo, url }
+            }
+            return null
+          } catch (err) {
+            lastErr = err
+            await new Promise(r => setTimeout(r, 500 * (attempt + 1))) // back off
+          }
         }
-      } catch (err) {
-        console.error('Upload error:', err)
+        throw lastErr
+      }))
+
+      for (const result of results) {
+        if (result.status === 'fulfilled' && result.value) {
+          newPhotos.push(result.value)
+        } else {
+          failed++
+          console.error('Upload failed after retries:', result.reason)
+        }
+        done++
       }
-      setUploadProgress({ done: i + 1, total: uploadFiles.length })
+
+      setUploadProgress({ done, total })
+
+      // Update grid progressively after each batch
+      const batchPhotos = newPhotos.slice(-results.filter(r => r.status === 'fulfilled' && r.value).length)
+      if (batchPhotos.length) {
+        setPhotos(prev => [...prev, ...batchPhotos.map(n => n.photo)])
+        setPhotoUrls(prev => {
+          const m = { ...prev }
+          batchPhotos.forEach(n => { if (n.url) m[n.photo.id] = n.url })
+          return m
+        })
+      }
     }
-    setPhotos(prev => [...prev, ...newPhotos.map(n => n.photo)])
-    setPhotoUrls(prev => {
-      const m = { ...prev }
-      newPhotos.forEach(n => { if (n.url) m[n.photo.id] = n.url })
-      return m
-    })
+
     setUploadFiles([])
     setUploading(false)
     setShowUpload(false)
+    if (failed > 0) {
+      alert(`${done - failed} photos uploaded successfully. ${failed} failed — try uploading those again.`)
+    }
   }
 
   const lastSelectedIndex = useRef(null)
