@@ -478,16 +478,45 @@ export default function GalleryDetail() {
                   onClick={() => removeSectionFromPhotos(sec)}
                   style={{
                     padding: '0.35rem 0.5rem',
-                    borderRadius: '0 100px 100px 0',
-                    border: '1px solid var(--border2)',
+                    borderRadius: '0',
+                    borderTop: '1px solid var(--border2)',
+                    borderBottom: '1px solid var(--border2)',
+                    borderLeft: 'none',
+                    borderRight: 'none',
                     background: 'transparent',
                     color: 'var(--muted2)',
                     fontSize: '0.65rem',
                     cursor: 'pointer',
                     fontFamily: 'inherit',
                   }}
-                  title="Remove section"
+                  title="Remove section label (keep photos)"
                 >✕</button>
+                <button
+                  onClick={async () => {
+                    const count = photos.filter(p => p.section === sec).length
+                    if (!window.confirm(`Delete all ${count} photos in "${sec}"? This cannot be undone.`)) return
+                    const toDelete = photos.filter(p => p.section === sec)
+                    await Promise.all(toDelete.map(async p => {
+                      try { await deleteFromR2(p.storage_path) } catch (e) { console.error(e) }
+                      await supabase.from('photos').delete().eq('id', p.id)
+                    }))
+                    setPhotos(prev => prev.filter(p => p.section !== sec))
+                    setCustomSections(prev => prev.filter(s => s !== sec))
+                    if (activeSection === sec) setActiveSection('all')
+                  }}
+                  style={{
+                    padding: '0.35rem 0.5rem',
+                    borderRadius: '0 100px 100px 0',
+                    border: '1px solid var(--border2)',
+                    borderLeft: 'none',
+                    background: 'transparent',
+                    color: 'var(--red)',
+                    fontSize: '0.65rem',
+                    cursor: 'pointer',
+                    fontFamily: 'inherit',
+                  }}
+                  title="Delete section + all photos"
+                >🗑</button>
               </div>
             ))}
           </div>
