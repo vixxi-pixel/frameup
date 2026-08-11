@@ -5,21 +5,33 @@
  */
 
 /**
- * Upload a File object to R2 via the /api/r2-upload proxy.
+ * Upload a File object to R2 via a presigned PUT URL.
+ * The file goes directly from the browser to R2 — no Vercel size limit.
  */
 export async function uploadToR2(file, storagePath) {
-  const res = await fetch('/api/r2-upload', {
+  // Step 1: get a presigned PUT URL from our API
+  const res = await fetch('/api/r2-presign', {
     method: 'POST',
-    headers: {
-      'Content-Type': file.type || 'application/octet-stream',
-      'x-r2-meta': JSON.stringify({ path: storagePath, contentType: file.type }),
-    },
-    body: file,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ path: storagePath, contentType: file.type || 'application/octet-stream' }),
   })
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({}))
-    throw new Error(`Upload failed: ${err.error || res.statusText}`)
+    throw new Error(`Presign failed: ${err.error || res.statusText}`)
+  }
+
+  const { url } = await res.json()
+
+  // Step 2: PUT the file directly to R2 using the presigned URL
+  const uploadRes = await fetch(url, {
+    method: 'PUT',
+    headers: { 'Content-Type': file.type || 'application/octet-stream' },
+    body: file,
+  })
+
+  if (!uploadRes.ok) {
+    throw new Error(`R2 upload failed: ${uploadRes.status} ${uploadRes.statusText}`)
   }
 
   return { path: storagePath }
