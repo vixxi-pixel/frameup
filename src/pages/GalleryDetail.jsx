@@ -15,6 +15,9 @@ export default function GalleryDetail() {
   const [photos, setPhotos] = useState([])
   const [views, setViews] = useState(0)
   const [viewHistory, setViewHistory] = useState([])
+  const [shareLinks, setShareLinks] = useState([])
+  const [favouritesBySession, setFavouritesBySession] = useState({})
+  const [hiddenBySession, setHiddenBySession] = useState({})
   const [loading, setLoading] = useState(true)
   const [copied, setCopied] = useState(false)
   const [photoUrls, setPhotoUrls] = useState({})
@@ -34,14 +37,26 @@ export default function GalleryDetail() {
   useEffect(() => { loadGallery() }, [id])
 
   async function loadGallery() {
-    const [{ data: gal }, { count }, { data: viewData }] = await Promise.all([
+    const [{ data: gal }, { count }, { data: viewData }, { data: linkData }, { data: favData }, { data: hiddenData }] = await Promise.all([
       supabase.from('galleries').select('*').eq('id', id).eq('photographer_id', user.id).single(),
       supabase.from('gallery_views').select('*', { count: 'exact', head: true }).eq('gallery_id', id).eq('is_photographer', false),
       supabase.from('gallery_views').select('viewed_at, viewer_token').eq('gallery_id', id).eq('is_photographer', false).order('viewed_at', { ascending: false }).limit(50),
+      supabase.from('share_links').select('*').eq('gallery_id', id).order('created_at', { ascending: false }),
+      supabase.from('favourites').select('session_token, photo_id').eq('gallery_id', id),
+      supabase.from('hidden_photos').select('session_token, photo_id').eq('gallery_id', id),
     ])
     setGallery(gal)
     setViews(count ?? 0)
     setViewHistory(viewData ?? [])
+    setShareLinks(linkData ?? [])
+
+    const favCounts = {}
+    ;(favData ?? []).forEach(f => { favCounts[f.session_token] = (favCounts[f.session_token] ?? 0) + 1 })
+    setFavouritesBySession(favCounts)
+
+    const hiddenCounts = {}
+    ;(hiddenData ?? []).forEach(h => { hiddenCounts[h.session_token] = (hiddenCounts[h.session_token] ?? 0) + 1 })
+    setHiddenBySession(hiddenCounts)
 
     // Fetch ALL photos in pages of 1000 (Supabase default limit)
     let allPhotos = []
@@ -383,6 +398,16 @@ export default function GalleryDetail() {
         {/* View history */}
         {viewHistory.length > 0 && (
           <ViewHistory viewHistory={viewHistory} views={views} />
+        )}
+
+        {/* Client share links */}
+        {shareLinks.length > 0 && (
+          <ShareLinksHistory
+            shareLinks={shareLinks}
+            favouritesBySession={favouritesBySession}
+            hiddenBySession={hiddenBySession}
+            totalPhotos={photos.length}
+          />
         )}
 
         {views === 0 && (
@@ -910,6 +935,78 @@ function ViewHistory({ viewHistory, views }) {
                     </div>
                     <div style={{ fontSize: '0.72rem', color: 'var(--muted)' }}>{dayLabel} at {timeLabel}</div>
                   </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function ShareLinksHistory({ shareLinks, favouritesBySession, hiddenBySession, totalPhotos }) {
+  const [collapsed, setCollapsed] = useState(true)
+  const [copiedSlug, setCopiedSlug] = useState(null)
+
+  function copyShareLink(slug) {
+    navigator.clipboard.writeText(`${window.location.origin}/share/${slug}`)
+    setCopiedSlug(slug)
+    setTimeout(() => setCopiedSlug(null), 2000)
+  }
+
+  return (
+    <div className="card" style={{ marginBottom: '1.5rem', overflow: 'hidden' }}>
+      <div
+        onClick={() => setCollapsed(v => !v)}
+        style={{ padding: '1rem 1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', userSelect: 'none' }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+          <span style={{ fontSize: '0.85rem', fontWeight: 500, color: 'var(--ink)' }}>🔗 Client share links</span>
+          <span style={{ fontSize: '0.72rem', background: 'var(--warm-bg)', color: 'var(--warm)', border: '1px solid var(--border2)', padding: '1px 7px', borderRadius: '100px' }}>
+            {shareLinks.length} link{shareLinks.length !== 1 ? 's' : ''}
+          </span>
+        </div>
+        <span style={{ fontSize: '0.8rem', color: 'var(--muted)', transition: 'transform 0.2s', display: 'inline-block', transform: collapsed ? 'rotate(-90deg)' : 'rotate(0deg)' }}>
+          ▾
+        </span>
+      </div>
+
+      {!collapsed && (
+        <div style={{ padding: '0 1.25rem 1.25rem', borderTop: '1px solid var(--border)' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', marginTop: '0.75rem' }}>
+            {shareLinks.map((link, i) => {
+              const date = new Date(link.created_at)
+              const isToday = date.toDateString() === new Date().toDateString()
+              const isYesterday = date.toDateString() === new Date(Date.now() - 86400000).toDateString()
+              const dayLabel = isToday ? 'Today' : isYesterday ? 'Yesterday' : date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+              const timeLabel = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
+              const isFavourites = link.share_type === 'favourites'
+              const favCount = favouritesBySession[link.session_token] ?? 0
+              const hiddenCount = hiddenBySession[link.session_token] ?? 0
+              const countLabel = isFavourites
+                ? `${favCount} favourited`
+                : `${Math.max(totalPhotos - hiddenCount, 0)} of ${totalPhotos} shown · ${hiddenCount} hidden`
+
+              return (
+                <div key={link.id} style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.5rem 0', borderBottom: i < shareLinks.length - 1 ? '1px solid var(--border)' : 'none' }}>
+                  <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'var(--warm-bg)', border: '1px solid var(--border2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', flexShrink: 0 }}>
+                    {isFavourites ? '⭐' : '👁'}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: '0.82rem', color: 'var(--ink)', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                      {isFavourites ? 'Favourites link' : 'Visible-only link'}
+                      {isToday && <span style={{ fontSize: '0.68rem', background: 'var(--warm-bg)', color: 'var(--warm)', padding: '1px 6px', borderRadius: '100px' }}>Today</span>}
+                    </div>
+                    <div style={{ fontSize: '0.72rem', color: 'var(--muted)' }}>{dayLabel} at {timeLabel} · {countLabel}</div>
+                  </div>
+                  <button
+                    className="btn btn-ghost"
+                    onClick={() => copyShareLink(link.slug)}
+                    style={{ fontSize: '0.72rem', padding: '0.25rem 0.6rem', flexShrink: 0 }}
+                  >
+                    {copiedSlug === link.slug ? '✓' : 'Copy'}
+                  </button>
                 </div>
               )
             })}
