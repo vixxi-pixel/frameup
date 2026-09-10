@@ -106,7 +106,7 @@ const tab = {
   transition: 'all 0.15s',
 }
 const tabActive = { color: 'var(--warm)', borderBottomColor: 'var(--warm)', fontWeight: 500 }
-const grid = { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }
+const grid = { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(150px, 1fr))', gap: '1rem' }
 const cardLink = {
   display: 'block',
   background: 'var(--surface)',
